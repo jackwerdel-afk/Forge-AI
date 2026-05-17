@@ -378,8 +378,16 @@ ${pageData}
     });
 
     const data = await res.json();
-    let raw = data.content.map(c=>c.text||'').join('').trim().replace(/```json|```/g,'').trim();
-    const result = JSON.parse(raw);
+
+    // Check for API errors
+    if (data.error) throw new Error(data.error.message || 'API error - check your key');
+    if (!data.content || !Array.isArray(data.content)) throw new Error('Invalid response: ' + JSON.stringify(data).slice(0,200));
+
+    let raw = data.content.map(c=>c.text||'').join('').trim();
+    raw = raw.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in response');
+    const result = JSON.parse(jsonMatch[0]);
 
     // Update site
     const idx = SITES.findIndex(s => s.id === id);
