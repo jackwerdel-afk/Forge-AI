@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI — Wix Connection</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0d;--surface:#131315;--surface2:#1a1a1d;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);--text:#f0f0f2;--muted:#6b6b78;--muted2:#9090a0;--accent:#ff6b35;--accent2:#ff8c5a;--green:#22c97a;--amber:#f5a623;--red:#ff3b3b;--blue:#4d9fff;--font:'Syne',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;padding:2rem}
+.wrap{max-width:700px;margin:0 auto}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff}
+.logo-text{font-size:1.1rem;font-weight:800}
+h1{font-size:1.6rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.5rem}
+.subtitle{font-size:.88rem;color:var(--muted2);margin-bottom:2rem;line-height:1.6}
+.card{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:1.5rem;margin-bottom:1.25rem}
+.card h2{font-size:1rem;font-weight:700;margin-bottom:.5rem}
+.card p{font-size:.83rem;color:var(--muted2);line-height:1.65;margin-bottom:1rem}
+.field{margin-bottom:1rem}
+.field label{display:block;font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.field input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:.8rem;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--accent)}
+.field input::placeholder{color:var(--muted)}
+.btn{padding:10px 22px;border-radius:8px;border:none;cursor:pointer;font-family:var(--font);font-size:.85rem;font-weight:700;transition:all .2s}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover{background:var(--accent2)}
+.btn-accent:disabled{opacity:.35;cursor:not-allowed}
+.msg{border-radius:8px;padding:.875rem 1rem;font-size:.82rem;margin-bottom:1rem;line-height:1.5;display:none}
+.msg.on{display:block}
+.msg.err{background:rgba(255,59,59,.08);border:1px solid rgba(255,59,59,.2);color:#ff8080}
+.msg.ok{background:rgba(34,201,122,.08);border:1px solid rgba(34,201,122,.2);color:var(--green)}
+.msg.info{background:rgba(77,159,255,.08);border:1px solid rgba(77,159,255,.2);color:#7db8ff}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.step{display:flex;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--border)}
+.step:last-child{border-bottom:none}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;margin-top:2px}
+.step-title{font-size:.88rem;font-weight:600;margin-bottom:3px}
+.step-detail{font-size:.8rem;color:var(--muted2);line-height:1.6}
+.notice{background:rgba(245,166,35,.06);border:1px solid rgba(245,166,35,.2);border-radius:10px;padding:1rem;margin-bottom:1.25rem;font-size:.82rem;color:rgba(245,166,35,.9);line-height:1.6}
+.sites-list{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem}
+.site-item{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--surface2);border-radius:8px}
+.site-name{font-size:.88rem;font-weight:600}
+.site-url{font-family:var(--mono);font-size:.72rem;color:var(--muted2);margin-top:2px}
+.tag{font-family:var(--mono);font-size:.62rem;padding:2px 8px;border-radius:4px}
+.tag-amber{background:rgba(245,166,35,.1);color:var(--amber)}
+.tag-green{background:rgba(34,201,122,.1);color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="logo">
+    <div class="logo-icon">F</div>
+    <div class="logo-text">Forge AI — Wix Connection</div>
+  </div>
+
+  <h1>Connect your Wix sites</h1>
+  <p class="subtitle">Add your Wix client sites to Forge AI for daily automated scanning, SEO monitoring, and email alerts when issues are found.</p>
+
+  <div class="notice">
+    ⚠ Wix has limited API access so Forge AI provides daily scheduled scans and email alerts instead of real-time building alerts. You'll still get full 5-module reports every day.
+  </div>
+
+  <div class="msg err" id="error-msg"></div>
+  <div class="msg ok" id="success-msg"></div>
+
+  <!-- ADD SITES -->
+  <div class="card">
+    <h2>Add your Wix client sites</h2>
+    <p>Enter each Wix site URL you want Forge AI to monitor. Forge AI will scan it daily and email you when critical issues are found.</p>
+
+    <div id="sites-list" class="sites-list"></div>
+
+    <div style="display:flex;gap:10px;margin-bottom:1rem">
+      <div class="field" style="flex:1;margin:0">
+        <label>Site URL</label>
+        <input type="text" id="new-url" placeholder="https://yoursite.wixsite.com/sitename" onkeydown="if(event.key==='Enter')addSite()">
+      </div>
+      <div class="field" style="flex:1;margin:0">
+        <label>Client Name</label>
+        <input type="text" id="new-name" placeholder="e.g. Acme Co" onkeydown="if(event.key==='Enter')addSite()">
+      </div>
+    </div>
+    <button class="btn btn-accent" onclick="addSite()" style="margin-bottom:1rem">+ Add Site</button>
+
+    <div class="field">
+      <label>Your Forge AI Token</label>
+      <input type="text" id="forge-token" placeholder="fat_xxxxxxxxxxxxxxxx_...">
+    </div>
+
+    <button class="btn btn-accent" id="save-btn" onclick="saveSites()">Save & Start Monitoring →</button>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="card">
+    <h2>How Wix monitoring works</h2>
+    <div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Add your Wix site URLs</div>
+          <div class="step-detail">Paste the URL of each Wix client site you want monitored. No plugin or token needed — just the URL.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Forge AI scans daily</div>
+          <div class="step-detail">Every day at 8am Forge AI runs a full 5-module scan — SEO, Speed, Mobile, UX, and Maintenance — on every site you added.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Instant email alerts</div>
+          <div class="step-detail">If a critical issue is found or a score drops significantly you get an email immediately with exactly what's wrong.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">Full reports in your dashboard</div>
+          <div class="step-detail">Every scan result appears in your Forge AI dashboard with scores, issues, severity classifications, and smart patch instructions.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem">
+    <a href="forge-ai-dashboard.html" style="color:var(--muted2);font-size:.82rem;text-decoration:none">← Back to dashboard</a>
+  </div>
+
+</div>
+
+<script>
+const FORGE_ENDPOINT = 'https://forge-ai-six-psi.vercel.app';
+const SUPA_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+
+let sites = [];
+let sb = null;
+
+window.onload = () => {
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  script.onload = () => {
+    sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  };
+  document.head.appendChild(script);
+  renderSites();
+};
+
+function addSite() {
+  let url = document.getElementById('new-url').value.trim();
+  const name = document.getElementById('new-name').value.trim();
+  if (!url) { showMsg('error', 'Please enter a site URL.'); return; }
+  if (!url.startsWith('http')) url = 'https://' + url;
+  sites.push({ url, name: name || url.replace(/https?:\/\//,'').split('/')[0] });
+  document.getElementById('new-url').value = '';
+  document.getElementById('new-name').value = '';
+  renderSites();
+}
+
+function removeSite(i) {
+  sites.splice(i, 1);
+  renderSites();
+}
+
+function renderSites() {
+  const el = document.getElementById('sites-list');
+  if (sites.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = sites.map((s, i) => `
+    <div class="site-item">
+      <div>
+        <div class="site-name">${s.name}</div>
+        <div class="site-url">${s.url}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tag tag-amber">Wix</span>
+        <button onclick="removeSite(${i})" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+async function saveSites() {
+  const forgeToken = document.getElementById('forge-token').value.trim();
+
+  if (sites.length === 0) { showMsg('error', 'Please add at least one site.'); return; }
+  if (!forgeToken) { showMsg('error', 'Please enter your Forge AI token.'); return; }
+  if (!sb) { showMsg('error', 'Not connected. Please refresh the page.'); return; }
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Saving...';
+
+  try {
+    // Find agency by token
+    const { data: agency, error: agencyError } = await sb
+      .from('agency_tokens')
+      .select('user_id')
+      .eq('token', forgeToken)
+      .single();
+
+    if (agencyError || !agency) throw new Error('Invalid Forge AI token. Find it in your dashboard under Monitoring Script.');
+
+    // Save each site to scheduled_sites
+    const records = sites.map(s => ({
+      user_id: agency.user_id,
+      url: s.url,
+      name: s.name,
+      schedule: 'daily',
+      active: true,
+      platform: 'wix'
+    }));
+
+    const { error: saveError } = await sb
+      .from('scheduled_sites')
+      .upsert(records, { onConflict: 'user_id,url' });
+
+    if (saveError) throw saveError;
+
+    showMsg('ok', '✓ ' + sites.length + ' Wix site' + (sites.length !== 1 ? 's' : '') + ' added to Forge AI monitoring! Daily scans will begin at 8am.');
+    btn.innerHTML = 'Saved ✓';
+    setTimeout(() => window.location.href = 'forge-ai-dashboard.html', 2500);
+
+  } catch(err) {
+    showMsg('error', err.message);
+    btn.disabled = false;
+    btn.innerHTML = 'Save & Start Monitoring →';
+  }
+}
+
+function showMsg(type, msg) {
+  document.getElementById('error-msg').classList.remove('on');
+  document.getElementById('success-msg').classList.remove('on');
+  const el = document.getElementById(type === 'error' ? 'error-msg' : 'success-msg');
+  el.textContent = msg;
+  el.classList.add('on');
+}
+</script>
+</body>
+</html>
