@@ -104,7 +104,7 @@ window.onload = async () => {
       const { data } = await sb.auth.getSession();
       if (data?.session) {
         log('Already logged in. Redirecting...');
-        window.location.href = 'forge-ai-dashboard.html.html';
+        window.location.href = 'forge-ai-dashboard.html';
         return;
       }
       log('Connected. Ready to sign in.');
