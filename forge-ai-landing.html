@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI — Website Intelligence for Agencies</title>
+<meta name="description" content="Forge AI scans, analyzes, and autonomously maintains every client website you manage. Real-time alerts, AI-powered fixes, and white label reports.">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0c0d;
+  --surface:#131315;
+  --surface2:#1a1a1d;
+  --surface3:#222226;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.1);
+  --text:#f0f0f2;
+  --muted:#6b6b78;
+  --muted2:#9090a0;
+  --accent:#ff6b35;
+  --accent2:#ff8c5a;
+  --green:#22c97a;
+  --amber:#f5a623;
+  --blue:#4d9fff;
+  --font:'Syne',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);overflow-x:hidden}
+
+/* GRID */
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,107,53,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,107,53,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* GLOW */
+.glow{position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(255,107,53,0.07) 0%,transparent 70%);top:-200px;right:-200px;pointer-events:none;z-index:0}
+.glow2{position:fixed;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(77,159,255,0.04) 0%,transparent 70%);bottom:-100px;left:-100px;pointer-events:none;z-index:0}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(12,12,13,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:1.1rem;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.logo-icon{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff}
+.logo-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;margin-left:4px}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.nav-links{display:flex;align-items:center;gap:24px}
+.nav-link{font-size:.83rem;color:var(--muted2);text-decoration:none;transition:color .15s}
+.nav-link:hover{color:var(--text)}
+.nav-cta{padding:8px 18px;border-radius:7px;background:var(--accent);color:#fff;border:none;font-family:var(--font);font-size:.83rem;font-weight:700;cursor:pointer;text-decoration:none;transition:all .2s}
+.nav-cta:hover{background:var(--accent2);transform:translateY(-1px)}
+.nav-signin{font-size:.83rem;color:var(--muted2);text-decoration:none;transition:color .15s}
+.nav-signin:hover{color:var(--text)}
+
+/* SECTIONS */
+.wrap{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
+
+/* HERO */
+.hero{padding:7rem 0 5rem;text-align:center}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(255,107,53,.25);padding:5px 16px;border-radius:100px;margin-bottom:2rem;animation:fadeUp .6s ease forwards}
+.hero h1{font-size:clamp(2.8rem,7vw,5.5rem);font-weight:800;letter-spacing:-.05em;line-height:1.02;margin-bottom:1.5rem;animation:fadeUp .6s ease .1s both}
+.hero h1 .accent{color:var(--accent)}
+.hero h1 .dim{color:var(--muted)}
+.hero-sub{font-size:1.05rem;color:var(--muted2);max-width:520px;margin:0 auto 2.5rem;line-height:1.75;animation:fadeUp .6s ease .2s both}
+.hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:4rem;animation:fadeUp .6s ease .3s both}
+.btn-hero{padding:13px 28px;border-radius:8px;font-family:var(--font);font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;border:none}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,107,53,.3)}
+.btn-ghost{background:transparent;color:var(--muted2);border:1px solid var(--border2)}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+
+/* HERO STATS */
+.hero-stats{display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;animation:fadeUp .6s ease .4s both}
+.stat{text-align:center}
+.stat-num{font-size:1.8rem;font-weight:800;letter-spacing:-.04em;color:var(--accent)}
+.stat-label{font-size:.72rem;font-family:var(--mono);color:var(--muted);letter-spacing:.05em;margin-top:2px}
+
+/* DASHBOARD PREVIEW */
+.preview-wrap{margin:5rem 0;position:relative;animation:fadeUp .8s ease .5s both}
+.preview-glow{position:absolute;inset:-40px;background:radial-gradient(ellipse at center,rgba(255,107,53,.08) 0%,transparent 70%);pointer-events:none}
+.preview-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)}
+.preview-bar{background:var(--surface2);padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.preview-dot{width:10px;height:10px;border-radius:50%}
+.preview-url{flex:1;background:var(--surface3);border-radius:4px;padding:4px 12px;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center}
+.preview-body{padding:1.5rem;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+.preview-stat{background:var(--surface2);border-radius:8px;padding:1rem}
+.preview-stat-label{font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
+.preview-stat-val{font-size:1.4rem;font-weight:800}
+.preview-sites{padding:0 1.5rem 1.5rem;display:flex;flex-direction:column;gap:8px}
+.preview-site{background:var(--surface2);border-radius:8px;padding:.875rem 1rem;display:flex;align-items:center;justify-content:space-between}
+.preview-site-name{font-size:.82rem;font-weight:600}
+.preview-site-url{font-family:var(--mono);font-size:.65rem;color:var(--muted2);margin-top:2px}
+.preview-tags{display:flex;gap:5px}
+.ptag{font-family:var(--mono);font-size:.58rem;padding:2px 6px;border-radius:3px}
+.ptag-green{background:rgba(34,201,122,.1);color:var(--green)}
+.ptag-amber{background:rgba(245,166,35,.1);color:var(--amber)}
+.ptag-red{background:rgba(255,59,59,.1);color:#ff6b6b}
+.preview-score{font-size:1.2rem;font-weight:800}
+
+/* FEATURES */
+.features{padding:5rem 0}
+.section-tag{font-family:var(--mono);font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem}
+.section-title{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;letter-spacing:-.04em;margin-bottom:1rem;line-height:1.1}
+.section-sub{font-size:.95rem;color:var(--muted2);max-width:480px;line-height:1.7;margin-bottom:3rem}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:768px){.features-grid{grid-template-columns:1fr}}
+.feature{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;transition:border-color .2s}
+.feature:hover{border-color:var(--border2)}
+.feature-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:1rem}
+.feature h3{font-size:.95rem;font-weight:700;margin-bottom:.5rem}
+.feature p{font-size:.82rem;color:var(--muted2);line-height:1.65}
+.feature-tag{display:inline-block;font-family:var(--mono);font-size:.6rem;padding:2px 8px;border-radius:4px;margin-top:.75rem;letter-spacing:.05em}
+
+/* SCORE SECTION */
+.score-section{padding:5rem 0}
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center}
+@media(max-width:768px){.score-grid{grid-template-columns:1fr}}
+.score-modules{display:flex;flex-direction:column;gap:12px}
+.score-mod{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem}
+.score-mod-bar{flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.score-mod-fill{height:100%;border-radius:3px;transition:width 1.5s ease}
+.score-mod-name{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);width:100px;flex-shrink:0}
+.score-mod-val{font-size:.82rem;font-weight:700;width:32px;text-align:right;flex-shrink:0}
+
+/* PLATFORMS */
+.platforms{padding:5rem 0;text-align:center}
+.platform-grid{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:2.5rem}
+.platform{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 2rem;display:flex;align-items:center;gap:10px;transition:border-color .2s;text-decoration:none}
+.platform:hover{border-color:var(--accent)}
+.platform-name{font-size:.88rem;font-weight:600}
+.platform-type{font-family:var(--mono);font-size:.62rem;color:var(--muted2);margin-top:1px}
+
+/* TESTIMONIALS */
+.testimonials{padding:5rem 0}
+.test-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:2.5rem}
+@media(max-width:768px){.test-grid{grid-template-columns:1fr}}
+.testimonial{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem}
+.test-quote{font-size:.88rem;color:var(--muted2);line-height:1.7;margin-bottom:1.25rem;font-style:italic}
+.test-author{display:flex;align-items:center;gap:10px}
+.test-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.test-name{font-size:.83rem;font-weight:600}
+.test-role{font-size:.72rem;color:var(--muted2);font-family:var(--mono)}
+
+/* CTA SECTION */
+.cta-section{padding:6rem 0;text-align:center}
+.cta-card{background:linear-gradient(135deg,rgba(255,107,53,.08) 0%,rgba(255,107,53,.02) 100%);border:1px solid rgba(255,107,53,.2);border-radius:20px;padding:4rem 2rem}
+.cta-card h2{font-size:clamp(1.8rem,4vw,3rem);font-weight:800;letter-spacing:-.04em;margin-bottom:1rem}
+.cta-card p{font-size:.95rem;color:var(--muted2);max-width:440px;margin:0 auto 2rem;line-height:1.7}
+.cta-note{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:1rem}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:2.5rem 0}
+.footer-inner{max-width:1200px;margin:0 auto;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.footer-logo{font-size:.88rem;font-weight:700;color:var(--muted2)}
+.footer-links{display:flex;gap:20px}
+.footer-link{font-size:.78rem;color:var(--muted);text-decoration:none;font-family:var(--mono)}
+.footer-link:hover{color:var(--text)}
+.footer-copy{font-size:.72rem;color:var(--muted);font-family:var(--mono)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="glow"></div>
+<div class="glow2"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-icon">F</div>
+      Forge AI
+      <div class="logo-dot"></div>
+    </a>
+    <div class="nav-links">
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#platforms" class="nav-link">Platforms</a>
+      <a href="forge-ai-pricing.html" class="nav-link">Pricing</a>
+      <a href="index.html" class="nav-signin">Sign in</a>
+      <a href="forge-ai-pricing.html" class="nav-cta">Start free →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-tag">⬡ Website Intelligence for Agencies</div>
+    <h1>Every client site.<br><span class="accent">Perfect.</span> <span class="dim">Always.</span></h1>
+    <p class="hero-sub">Forge AI scans, analyzes, and autonomously maintains every website you manage — catching issues before your clients ever notice them.</p>
+    <div class="hero-ctas">
+      <a href="forge-ai-pricing.html" class="btn-hero btn-primary">Start free — 3 scans on us</a>
+      <a href="#features" class="btn-hero btn-ghost">See how it works →</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-num">100</div>
+        <div class="stat-label">Point scoring system</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">5</div>
+        <div class="stat-label">Analysis modules</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">Autonomous monitoring</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">4</div>
+        <div class="stat-label">Platform integrations</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD PREVIEW -->
+  <div class="preview-wrap">
+    <div class="preview-glow"></div>
+    <div class="preview-card">
+      <div class="preview-bar">
+        <div class="preview-dot" style="background:#ff5f57"></div>
+        <div class="preview-dot" style="background:#febc2e"></div>
+        <div class="preview-dot" style="background:#28c840"></div>
+        <div class="preview-url">forge-ai-six-psi.vercel.app/forge-ai-dashboard.html</div>
+      </div>
+      <div class="preview-body">
+        <div class="preview-stat"><div class="preview-stat-label">Total Sites</div><div class="preview-stat-val" style="color:var(--text)">12</div></div>
+        <div class="preview-stat"><div class="preview-stat-label">Avg Score</div><div class="preview-stat-val" style="color:var(--green)">84</div></div>
+        <div class="preview-stat"><div class="preview-stat-label">Critical Issues</div><div class="preview-stat-val" style="color:var(--red)">3</div></div>
+        <div class="preview-stat"><div class="preview-stat-label">Total Scans</div><div class="preview-stat-val" style="color:var(--accent)">247</div></div>
+      </div>
+      <div class="preview-sites">
+        <div class="preview-site">
+          <div>
+            <div class="preview-site-name">Acme Corporation</div>
+            <div class="preview-site-url">acmecorp.com</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="preview-tags">
+              <span class="ptag ptag-green">Auto ON</span>
+              <span class="ptag ptag-green">Grade A</span>
+            </div>
+            <div class="preview-score" style="color:var(--green)">91</div>
+          </div>
+        </div>
+        <div class="preview-site">
+          <div>
+            <div class="preview-site-name">Blue Sky Marketing</div>
+            <div class="preview-site-url">blueskymarketing.io</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="preview-tags">
+              <span class="ptag ptag-green">Auto ON</span>
+              <span class="ptag ptag-amber">Grade B</span>
+            </div>
+            <div class="preview-score" style="color:var(--amber)">78</div>
+          </div>
+        </div>
+        <div class="preview-site">
+          <div>
+            <div class="preview-site-name">Downtown Bakery</div>
+            <div class="preview-site-url">downtownbakery.com</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="preview-tags">
+              <span class="ptag ptag-red">2 critical</span>
+              <span class="ptag ptag-amber">Grade C</span>
+            </div>
+            <div class="preview-score" style="color:var(--red)">61</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="features" id="features">
+    <div class="section-tag">What Forge AI does</div>
+    <div class="section-title">Everything your agency<br>needs. Nothing it doesn't.</div>
+    <p class="section-sub">One platform that handles scanning, monitoring, maintenance, and reporting — so your team can focus on building great sites.</p>
+
+    <div class="features-grid">
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(77,159,255,.1)">🔍</div>
+        <h3>AI-Powered Scanning</h3>
+        <p>Full 5-module analysis across SEO, Speed, Mobile, UX, and Maintenance. Every issue classified as Critical, High, or Medium with specific fix instructions.</p>
+        <span class="feature-tag" style="background:rgba(77,159,255,.1);color:var(--blue)">100 point scoring</span>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(34,201,122,.1)">⚡</div>
+        <h3>Real-time Building Alerts</h3>
+        <p>As your team builds in WordPress or Webflow, Forge AI watches and alerts them instantly — missing alt text, bad headings, slow pages — before publishing.</p>
+        <span class="feature-tag" style="background:rgba(34,201,122,.1);color:var(--green)">WordPress & Webflow</span>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(255,107,53,.1)">🤖</div>
+        <h3>Autonomous Maintenance</h3>
+        <p>Forge AI watches every site 24/7 and fixes issues automatically. Missing meta description? AI writes one. Image missing alt text? Fixed. No manual work needed.</p>
+        <span class="feature-tag" style="background:rgba(255,107,53,.1);color:var(--accent)">Auto-fix enabled</span>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(245,166,35,.1)">📧</div>
+        <h3>Instant Email Alerts</h3>
+        <p>When a critical issue is found or a score drops significantly, Forge AI emails your team immediately with exactly what's wrong and how to fix it.</p>
+        <span class="feature-tag" style="background:rgba(245,166,35,.1);color:var(--amber)">Daily monitoring</span>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(168,85,247,.1)">📄</div>
+        <h3>White Label Reports</h3>
+        <p>Generate beautiful branded reports with your agency logo and colors. Send them straight to clients — they never see Forge AI, only your professional analysis.</p>
+        <span class="feature-tag" style="background:rgba(168,85,247,.1);color:#a855f7">Your branding</span>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(34,201,122,.1)">🔧</div>
+        <h3>Smart Patch Instructions</h3>
+        <p>Not just "fix your meta description" — Forge AI reads your page content and writes the actual improved version, specific to that site. Ready to copy and paste.</p>
+        <span class="feature-tag" style="background:rgba(34,201,122,.1);color:var(--green)">AI-generated fixes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCORE SECTION -->
+  <div class="score-section">
+    <div class="score-grid">
+      <div>
+        <div class="section-tag">The scoring system</div>
+        <div class="section-title">100 points.<br>5 modules.<br>Zero guesswork.</div>
+        <p class="section-sub">Every site gets scored across five critical areas. Every point deducted has a reason. Every issue has a fix. No vague recommendations — just clear, actionable intelligence.</p>
+        <a href="forge-ai-pricing.html" class="btn-hero btn-primary" style="display:inline-block">See it in action →</a>
+      </div>
+      <div class="score-modules">
+        <div class="score-mod">
+          <div class="score-mod-name">SEO</div>
+          <div class="score-mod-bar"><div class="score-mod-fill" style="width:85%;background:#4d9fff"></div></div>
+          <div class="score-mod-val" style="color:#4d9fff">17/20</div>
+        </div>
+        <div class="score-mod">
+          <div class="score-mod-name">Speed</div>
+          <div class="score-mod-bar"><div class="score-mod-fill" style="width:75%;background:#22c97a"></div></div>
+          <div class="score-mod-val" style="color:#22c97a">15/20</div>
+        </div>
+        <div class="score-mod">
+          <div class="score-mod-name">Mobile</div>
+          <div class="score-mod-bar"><div class="score-mod-fill" style="width:90%;background:#ff6b35"></div></div>
+          <div class="score-mod-val" style="color:#ff6b35">18/20</div>
+        </div>
+        <div class="score-mod">
+          <div class="score-mod-name">UX</div>
+          <div class="score-mod-bar"><div class="score-mod-fill" style="width:80%;background:#a855f7"></div></div>
+          <div class="score-mod-val" style="color:#a855f7">16/20</div>
+        </div>
+        <div class="score-mod">
+          <div class="score-mod-name">Maintenance</div>
+          <div class="score-mod-bar"><div class="score-mod-fill" style="width:70%;background:#f5a623"></div></div>
+          <div class="score-mod-val" style="color:#f5a623">14/20</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+          <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted)">Overall Score</div>
+          <div style="font-size:1.5rem;font-weight:800;color:var(--green)">80<span style="font-size:.85rem;color:var(--muted);font-weight:400">/100</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLATFORMS -->
+  <div class="platforms" id="platforms">
+    <div class="section-tag">Platform integrations</div>
+    <div class="section-title">Works with every platform<br>your clients use</div>
+    <div class="platform-grid">
+      <a href="forge-ai-webflow.html" class="platform">
+        <div style="width:32px;height:32px;background:rgba(77,159,255,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">W</div>
+        <div>
+          <div class="platform-name">Webflow</div>
+          <div class="platform-type">Full API — Real-time alerts</div>
+        </div>
+      </a>
+      <a href="#" class="platform">
+        <div style="width:32px;height:32px;background:rgba(34,201,122,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">W</div>
+        <div>
+          <div class="platform-name">WordPress</div>
+          <div class="platform-type">Plugin — Real-time alerts</div>
+        </div>
+      </a>
+      <a href="forge-ai-wix.html" class="platform">
+        <div style="width:32px;height:32px;background:rgba(245,166,35,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">W</div>
+        <div>
+          <div class="platform-name">Wix</div>
+          <div class="platform-type">URL monitoring — Daily scans</div>
+        </div>
+      </a>
+      <a href="forge-ai-squarespace.html" class="platform">
+        <div style="width:32px;height:32px;background:rgba(168,85,247,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">S</div>
+        <div>
+          <div class="platform-name">Squarespace</div>
+          <div class="platform-type">URL monitoring — Daily scans</div>
+        </div>
+      </a>
+      <a href="forge-ai-dashboard.html" class="platform">
+        <div style="width:32px;height:32px;background:rgba(255,107,53,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">✦</div>
+        <div>
+          <div class="platform-name">Custom Sites</div>
+          <div class="platform-type">Any URL — Full monitoring</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- TESTIMONIALS -->
+  <div class="testimonials">
+    <div style="text-align:center;margin-bottom:1rem">
+      <div class="section-tag" style="display:inline-block">What agencies say</div>
+    </div>
+    <div style="text-align:center;margin-bottom:2.5rem">
+      <div class="section-title">Agencies that use Forge AI<br>never go back</div>
+    </div>
+    <div class="test-grid">
+      <div class="testimonial">
+        <div class="test-quote">"We used to spend 3-4 hours manually auditing each client site before launch. Forge AI does it in 15 seconds and catches things we would have missed. It's transformed how we work."</div>
+        <div class="test-author">
+          <div class="test-avatar" style="background:var(--accent)">S</div>
+          <div>
+            <div class="test-name">Sarah Mitchell</div>
+            <div class="test-role">Director — Pixel Perfect Agency</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial">
+        <div class="test-quote">"The white label reports are incredible. We send them to clients every month and they think we have a whole SEO team working on their site. It's just Forge AI running in the background."</div>
+        <div class="test-author">
+          <div class="test-avatar" style="background:var(--blue)">J</div>
+          <div>
+            <div class="test-name">James Okafor</div>
+            <div class="test-role">Founder — Digital Craft Studio</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial">
+        <div class="test-quote">"The real-time alerts while building in WordPress are a game changer. My developers get notified the second they miss an alt tag or mess up a heading structure. Zero SEO mistakes on launch day."</div>
+        <div class="test-author">
+          <div class="test-avatar" style="background:var(--green)">M</div>
+          <div>
+            <div class="test-name">Maria Chen</div>
+            <div class="test-role">CTO — Northstar Web Co</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <div class="cta-card">
+      <h2>Ready to transform<br>your agency?</h2>
+      <p>Start with 3 free scans. No credit card required. See exactly what Forge AI can do for your client sites in the next 5 minutes.</p>
+      <a href="forge-ai-pricing.html" class="btn-hero btn-primary">Start free today →</a>
+      <div class="cta-note">3 free scans · No credit card · Cancel anytime</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">Forge AI — Werdel Global Systems</div>
+    <div class="footer-links">
+      <a href="forge-ai-pricing.html" class="footer-link">Pricing</a>
+      <a href="forge-ai-dashboard.html" class="footer-link">Dashboard</a>
+      <a href="index.html" class="footer-link">Sign in</a>
+    </div>
+    <div class="footer-copy">© 2026 Werdel Global Systems</div>
+  </div>
+</footer>
+
+</body>
+</html>
