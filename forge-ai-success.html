@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI — Welcome!</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0d;--surface:#131315;--border2:rgba(255,255,255,0.1);--text:#f0f0f2;--muted2:#9090a0;--accent:#ff6b35;--green:#22c97a;--font:'Syne',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+.card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:3rem;max-width:520px;width:100%;text-align:center}
+.check{width:64px;height:64px;background:rgba(34,201,122,.1);border:2px solid var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:28px}
+h1{font-size:1.8rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.75rem}
+.subtitle{font-size:.9rem;color:var(--muted2);line-height:1.7;margin-bottom:2rem}
+.plan-badge{display:inline-block;background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.3);color:var(--accent);font-family:var(--mono);font-size:.72rem;padding:4px 14px;border-radius:100px;letter-spacing:.08em;margin-bottom:2rem;text-transform:uppercase}
+.steps{text-align:left;margin-bottom:2rem}
+.step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.step:last-child{border-bottom:none}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;margin-top:2px}
+.step-text{font-size:.85rem;color:var(--muted2);line-height:1.5}
+.step-text strong{color:var(--text)}
+.btn{display:block;width:100%;padding:13px;border-radius:8px;border:none;cursor:pointer;font-family:var(--font);font-size:.9rem;font-weight:700;background:var(--accent);color:#fff;text-decoration:none;transition:all .2s;margin-top:1.5rem}
+.btn:hover{background:#ff8c5a;transform:translateY(-1px)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="check">✓</div>
+  <div class="plan-badge" id="plan-name">Agency Plan</div>
+  <h1>Welcome to Forge AI!</h1>
+  <p class="subtitle">Your subscription is active. You now have full access to Forge AI — the most powerful website intelligence platform for agencies.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text"><strong>Go to your dashboard</strong> and add your first client site to start scanning</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text"><strong>Connect your platforms</strong> — WordPress, Webflow, Wix, or Squarespace</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text"><strong>Turn on Auto Scan</strong> for each site so Forge AI monitors them automatically every day</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text"><strong>Generate white label reports</strong> to send to your clients and show them the value you're delivering</div>
+    </div>
+  </div>
+
+  <a href="forge-ai-dashboard.html" class="btn">Go to Dashboard →</a>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const plan = params.get('plan') || 'agency';
+const planNames = { starter: 'Starter Plan', agency: 'Agency Plan', enterprise: 'Enterprise Plan' };
+document.getElementById('plan-name').textContent = planNames[plan] || 'Agency Plan';
+</script>
+</body>
+</html>
