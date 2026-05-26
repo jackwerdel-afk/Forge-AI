@@ -8,15 +8,15 @@
   ],
   "headers": [
     {
-      "source": "/forge-ai-wordpress-plugin.php",
+      "source": "/forge-ai-wordpress-plugin.zip",
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/octet-stream"
+          "value": "application/zip"
         },
         {
           "key": "Content-Disposition",
-          "value": "attachment; filename=forge-ai-wordpress-plugin.php"
+          "value": "attachment; filename=forge-ai-wordpress-plugin.zip"
         }
       ]
     }
