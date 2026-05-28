@@ -143,7 +143,7 @@ ${pageData}
         // Send email alert if critical issues found or score dropped
         if (needsAlert && site.user_email) {
           try {
-            await fetch(`${process.env.VERCEL_URL || 'https://forge-ai-six-psi.vercel.app'}/api/send-alert`, {
+            await fetch(`${'https://forge-ai-six-psi.vercel.app'}/api/send-alert`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
