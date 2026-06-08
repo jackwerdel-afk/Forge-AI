@@ -86,7 +86,7 @@ H1: "${h1Match ? h1Match[1] : 'NONE FOUND'}"`;
             'anthropic-version': '2023-06-01'
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-5',
+            model: 'claude-haiku-4-5-20251001',
             max_tokens: 1500,
             messages: [{
               role: 'user',
@@ -139,6 +139,37 @@ ${pageData}
           .eq('id', site.id);
 
         const needsAlert = hasCritical || scoreDrop >= 10;
+
+        // Save alert to realtime_alerts table so it shows in dashboard
+        if (needsAlert) {
+          try {
+            const criticalIssues = scanResult.critical_issues || [];
+            const allIssues = [];
+            Object.values(scanResult.modules || {}).forEach(m => {
+              if (m.issues) m.issues.forEach(i => allIssues.push(i));
+            });
+            const critCount = allIssues.filter(i => i.severity === 'critical').length;
+            const highCount = allIssues.filter(i => i.severity === 'high').length;
+
+            let message = '';
+            if (hasCritical) message = critCount + ' critical issue' + (critCount !== 1 ? 's' : '') + ' detected on this site.';
+            if (scoreDrop >= 10) message = (message ? message + ' ' : '') + 'Score dropped ' + scoreDrop + ' points since last scan.';
+
+            await sb.from('realtime_alerts').insert({
+              user_id: site.user_id,
+              url: site.url,
+              site_name: site.name || site.url,
+              message: message,
+              severity: hasCritical ? 'critical' : 'high',
+              issues: allIssues,
+              read: false,
+              created_at: new Date().toISOString()
+            });
+            console.log('Alert saved to dashboard for:', site.url);
+          } catch(alertSaveErr) {
+            console.error('Alert save error:', alertSaveErr.message);
+          }
+        }
 
         // Send email alert if critical issues found or score dropped
         if (needsAlert && site.user_email) {
