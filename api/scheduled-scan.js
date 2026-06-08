@@ -241,6 +241,17 @@ ${pageData}
 
     console.log(`Scan complete: ${successful}/${sites.length} successful, ${needAlerts} need alerts`);
 
+    // Trigger autonomous WordPress maintenance after scan
+    try {
+      await fetch('https://forge-ai-six-psi.vercel.app/api/auto-maintain', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET}` }
+      });
+      console.log('Auto-maintain triggered successfully');
+    } catch(maintErr) {
+      console.log('Auto-maintain trigger error:', maintErr.message);
+    }
+
     return res.status(200).json({
       message: 'Scheduled scan complete',
       scanned: successful,
