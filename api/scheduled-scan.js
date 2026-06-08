@@ -128,7 +128,7 @@ ${pageData}
         const scoreDrop = previousScore - scanResult.overall_score;
         const hasCritical = (scanResult.critical_issues || []).length > 0;
 
-        // Update site with latest score
+        // Update scheduled_sites with latest score
         await sb
           .from('scheduled_sites')
           .update({
@@ -137,6 +137,30 @@ ${pageData}
             has_critical: hasCritical
           })
           .eq('id', site.id);
+
+        // Also update user_sites so dashboard shows correct last scanned date
+        try {
+          const { data: userSite } = await sb
+            .from('user_sites')
+            .select('site_id')
+            .eq('user_id', site.user_id)
+            .eq('url', site.url)
+            .maybeSingle();
+
+          if (userSite) {
+            await sb.from('user_sites').update({
+              score: scanResult.overall_score,
+              grade: scanResult.grade,
+              last_scan: new Date().toISOString(),
+              issues: Object.values(scanResult.modules || {}).flatMap(m => m.issues || []),
+              last_result: scanResult,
+              updated_at: new Date().toISOString()
+            }).eq('user_id', site.user_id).eq('url', site.url);
+            console.log('Updated user_sites for:', site.url);
+          }
+        } catch(userSiteErr) {
+          console.log('user_sites update error:', userSiteErr.message);
+        }
 
         const needsAlert = hasCritical || scoreDrop >= 10;
 
