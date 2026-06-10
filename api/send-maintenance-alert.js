@@ -41,7 +41,7 @@ module.exports = async (req, res) => {
       ${scoreDrop > 0 ? `<div style="background:#1a1a1d;border-radius:10px;padding:16px;flex:1;min-width:120px"><div style="font-size:11px;color:#6b6b78;margin-bottom:6px">Score Drop</div><div style="font-size:28px;font-weight:800;color:#ff3b3b">-${scoreDrop}</div></div>` : ''}
     </div>
     ${fixes && fixes.length > 0 ? `<div style="font-size:12px;color:#6b6b78;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Maintenance Actions</div>${fixesHtml}` : ''}
-    <a href="https://forge-ai-six-psi.vercel.app/forge-ai-dashboard.html" style="display:block;background:#ff6b35;color:#fff;text-align:center;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-top:8px">View Full Report →</a>
+    <a href="https://forgeai-wgs.com/forge-ai-dashboard.html" style="display:block;background:#ff6b35;color:#fff;text-align:center;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-top:8px">View Full Report →</a>
   </div>
   <p style="color:#6b6b78;font-size:12px;text-align:center;font-family:monospace">Forge AI Autonomous Maintenance — Werdel Global Systems</p>
 </div></body></html>`;
