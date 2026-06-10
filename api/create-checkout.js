@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
   if (!plan) return res.status(400).json({ error: 'Missing plan' });
 
   const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
-  const BASE_URL = 'https://forge-ai-six-psi.vercel.app';
+  const BASE_URL = 'https://forgeai-wgs.com';
 
   const plans = {
     starter: { name: 'Forge AI Starter', description: 'Up to 5 client sites', amount: 4900, interval: 'month' },
