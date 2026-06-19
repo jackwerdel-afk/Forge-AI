@@ -1,0 +1,228 @@
+const { createClient } = require('@supabase/supabase-js');
+
+module.exports = async (req, res) => {
+  // Security check
+  const authHeader = req.headers.authorization;
+  const secret = req.query && req.query.secret;
+  const isAuthorized = 
+    authHeader === `Bearer ${process.env.CRON_SECRET}` ||
+    secret === process.env.CRON_SECRET ||
+    req.method === 'GET';
+
+  if (!isAuthorized) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  console.log('Scheduled scan started:', new Date().toISOString());
+
+  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+
+  try {
+    // Get all active sites - deduplicated by user_id + url
+    const { data: allSites, error } = await sb
+      .from('scheduled_sites')
+      .select('*')
+      .eq('active', true);
+
+    if (error) throw error;
+    if (!allSites || allSites.length === 0) {
+      return res.status(200).json({ message: 'No sites to scan', scanned: 0 });
+    }
+
+    // Deduplicate by user_id + url
+    const seen = new Set();
+    const sites = allSites.filter(site => {
+      const key = site.user_id + '|' + site.url;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    console.log(`Found ${sites.length} unique sites to scan (${allSites.length} total)`);
+
+    // Fetch user emails
+    const userEmails = {};
+    try {
+      const { data: { users } } = await sb.auth.admin.listUsers();
+      if (users) users.forEach(u => { userEmails[u.id] = u.email; });
+    } catch(e) {
+      console.log('Could not fetch user emails:', e.message);
+    }
+
+    const results = [];
+    let scanned = 0;
+    let needAlerts = 0;
+
+    for (const site of sites) {
+      try {
+        console.log(`Scanning: ${site.url}`);
+
+        // Use the secure /api/scan endpoint for accurate consistent scores
+        const scanRes = await fetch('https://forgeai-wgs.com/api/scan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.CRON_SECRET}`
+          },
+          body: JSON.stringify({ url: site.url, internal: true })
+        });
+
+        if (!scanRes.ok) {
+          console.log(`Scan failed for ${site.url}: ${scanRes.status}`);
+          continue;
+        }
+
+        const scanData = await scanRes.json();
+        if (!scanData.success || !scanData.result) {
+          console.log(`No result for ${site.url}`);
+          continue;
+        }
+
+        const result = scanData.result;
+        const newScore = result.overall_score;
+        const previousScore = site.last_score !== null && site.last_score !== undefined ? site.last_score : null;
+        const scoreDrop = previousScore !== null ? previousScore - newScore : 0;
+
+        // Check for critical issues
+        const allIssues = [];
+        Object.values(result.modules || {}).forEach(m => {
+          if (m && m.issues) m.issues.forEach(i => allIssues.push(i));
+        });
+
+        // Only alert if:
+        // 1. There WAS a real previous score (not first scan)
+        // 2. Score actually DROPPED by 10+ points
+        const needsAlert = previousScore !== null && scoreDrop >= 10;
+
+        results.push({
+          url: site.url,
+          score: newScore,
+          previousScore,
+          scoreDrop,
+          needsAlert
+        });
+
+        // Update scheduled_sites
+        const nowISO = new Date().toISOString();
+        await sb.from('scheduled_sites').update({
+          last_score: newScore,
+          last_scanned: nowISO,
+          has_critical: (result.critical_issues || 0) > 0
+        }).eq('id', site.id);
+
+        // Also update user_sites so dashboard shows correct last scan time
+        try {
+          await sb.from('user_sites').update({
+            score: newScore,
+            grade: result.grade || null,
+            last_scan: nowISO,
+            last_result: result,
+            updated_at: nowISO
+          }).eq('url', site.url).eq('user_id', site.user_id);
+        } catch(usErr) {
+          console.log('user_sites update error:', usErr.message);
+        }
+
+        // Update user_sites
+        try {
+          await sb.from('user_sites').update({
+            score: newScore,
+            grade: result.grade,
+            last_scan: new Date().toISOString(),
+            last_result: result,
+            updated_at: new Date().toISOString()
+          }).eq('user_id', site.user_id).eq('url', site.url);
+        } catch(e) {
+          console.log('user_sites update error:', e.message);
+        }
+
+        // Save to scan_results history
+        try {
+          await sb.from('scan_results').insert({
+            user_id: site.user_id,
+            url: site.url,
+            score: newScore,
+            grade: result.grade,
+            modules: result.modules,
+            issues: allIssues,
+            scanned_at: new Date().toISOString()
+          });
+        } catch(e) {
+          console.log('scan_results insert error:', e.message);
+        }
+
+        // Only send alerts and emails for score drops
+        if (needsAlert) {
+          needAlerts++;
+          const userEmail = userEmails[site.user_id];
+
+          // Save dashboard alert
+          try {
+            await sb.from('realtime_alerts').insert({
+              user_id: site.user_id,
+              url: site.url,
+              site_name: site.name || site.url,
+              message: `Score dropped ${scoreDrop} points (from ${previousScore} to ${newScore}) on this site.`,
+              severity: scoreDrop >= 20 ? 'critical' : 'high',
+              read: false,
+              created_at: new Date().toISOString()
+            });
+          } catch(e) {
+            console.log('Alert save error:', e.message);
+          }
+
+          // Send email alert
+          if (userEmail) {
+            try {
+              await fetch('https://forgeai-wgs.com/api/send-alert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  to: userEmail,
+                  siteName: site.name || site.url,
+                  siteUrl: site.url,
+                  score: newScore,
+                  criticalIssues: allIssues.slice(0, 5),
+                  dashboardUrl: 'https://forgeai-wgs.com/forge-ai-dashboard.html'
+                })
+              });
+              console.log(`Alert email sent to ${userEmail} for ${site.url}`);
+            } catch(e) {
+              console.log('Email send error:', e.message);
+            }
+          }
+        }
+
+        scanned++;
+
+      } catch(siteErr) {
+        console.log(`Error scanning ${site.url}:`, siteErr.message);
+      }
+    }
+
+    // Trigger autonomous WordPress maintenance
+    try {
+      await fetch('https://forgeai-wgs.com/api/auto-maintain', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET}` }
+      });
+      console.log('Auto-maintain triggered');
+    } catch(e) {
+      console.log('Auto-maintain error:', e.message);
+    }
+
+    console.log(`Scan complete: ${scanned} sites scanned, ${needAlerts} alerts sent`);
+
+    return res.status(200).json({
+      message: 'Scheduled scan complete',
+      scanned,
+      total: sites.length,
+      needAlerts,
+      results
+    });
+
+  } catch(err) {
+    console.error('Scheduled scan error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+};
