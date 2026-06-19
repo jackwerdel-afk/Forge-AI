@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI — Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root {
+  --bg: #09090f; --sidebar: #111117; --surface: #111117; --surface2: #17171f;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --text: #f0f0f5; --text2: #a0a0b0; --muted: #606070; --muted2: #9090a8;
+  --accent: #FF883F; --accent2: #ff6b20;
+  --green: #22c97a; --red: #ff4d4d; --yellow: #f5a623; --blue: #4d9fff;
+  --font: 'Inter', -apple-system, sans-serif; --mono: 'JetBrains Mono', monospace;
+  --sidebar-width: 220px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* ── LAYOUT ── */
+.layout { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar { width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; overflow-y: auto; }
+.sidebar-logo { display: flex; align-items: center; justify-content: center; padding: 22px 18px 18px; border-bottom: 1px solid var(--border); text-decoration: none; }
+.sidebar-nav { flex: 1; padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; color: var(--muted2); text-decoration: none; font-size: 13px; font-weight: 500; transition: all 0.15s; cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: rgba(255,136,63,0.1); color: var(--accent); font-weight: 600; }
+.nav-item-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+.sidebar-bottom { padding: 10px 10px 14px; border-top: 1px solid var(--border); }
+.agency-info { padding: 8px 12px; margin-bottom: 4px; }
+.agency-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+.agency-name-text { font-size: 13px; font-weight: 600; color: var(--text2); }
+.plan-badge { display: inline-flex; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; font-family: var(--mono); margin-top: 4px; }
+.plan-badge.free { background: rgba(107,107,120,.15); color: var(--muted2); }
+.plan-badge.starter { background: rgba(77,159,255,.12); color: var(--blue); }
+.plan-badge.agency { background: rgba(34,201,122,.12); color: var(--green); }
+.plan-badge.enterprise { background: rgba(255,107,53,.12); color: var(--accent); }
+
+/* ── MAIN ── */
+.main { margin-left: var(--sidebar-width); flex: 1; padding: 36px 40px; max-width: 860px; }
+.page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 5px; }
+.page-sub { font-size: 13px; color: var(--muted2); margin-bottom: 32px; }
+
+/* ── SETTINGS SECTIONS ── */
+.settings-section { margin-bottom: 28px; }
+.section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.section-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.section-title { font-size: 14px; font-weight: 600; }
+.section-desc { font-size: 12px; color: var(--muted2); margin-top: 1px; }
+
+/* ── CARDS ── */
+.settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); gap: 20px; }
+.settings-row:last-child { border-bottom: none; }
+.settings-row-left { flex: 1; min-width: 0; }
+.settings-row-label { font-size: 13.5px; font-weight: 500; margin-bottom: 3px; }
+.settings-row-desc { font-size: 12px; color: var(--muted2); line-height: 1.5; }
+
+/* ── INPUTS ── */
+.settings-input { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 12px; color: var(--text); font-family: var(--font); font-size: 13px; outline: none; transition: border-color 0.15s; width: 220px; }
+.settings-input:focus { border-color: var(--accent); }
+.settings-input::placeholder { color: var(--muted); }
+.settings-select { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 12px; color: var(--text); font-family: var(--font); font-size: 13px; outline: none; cursor: pointer; width: 180px; }
+
+/* ── TOGGLE ── */
+.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--surface2); border: 1px solid var(--border2); border-radius: 20px; cursor: pointer; transition: all 0.2s; }
+.toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: var(--muted2); border-radius: 50%; transition: all 0.2s; }
+.toggle input:checked + .toggle-slider { background: rgba(255,136,63,.15); border-color: var(--accent); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(18px); background: var(--accent); }
+
+/* ── BUTTONS ── */
+.btn-primary { background: var(--accent); color: #fff; border: none; padding: 8px 18px; border-radius: 8px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-sm { background: var(--surface2); border: 1px solid var(--border2); color: var(--muted2); padding: 6px 12px; border-radius: 7px; font-family: var(--font); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.btn-sm:hover { border-color: var(--text); color: var(--text); }
+.btn-danger { background: rgba(255,77,77,.08); border: 1px solid rgba(255,77,77,.2); color: var(--red); padding: 8px 18px; border-radius: 8px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.btn-danger:hover { background: rgba(255,77,77,.15); border-color: var(--red); }
+
+/* ── TOKEN DISPLAY ── */
+.token-display { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-family: var(--mono); font-size: 12px; color: var(--accent); flex: 1; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: 12px 18px; font-size: 13px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 999; display: none; align-items: center; gap: 10px; }
+.toast.success { border-color: rgba(34,201,122,.3); color: var(--green); }
+.toast.error { border-color: rgba(255,77,77,.3); color: var(--red); }
+
+/* ── DANGER ZONE ── */
+.danger-zone { background: rgba(255,77,77,.03); border: 1px solid rgba(255,77,77,.15); border-radius: 12px; overflow: hidden; }
+
+::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:var(--surface2); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+  <div style="text-align:center">
+    <div style="width:36px;height:36px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 14px"></div>
+    <div style="font-size:13px;color:var(--muted)">Loading...</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <a href="forge-ai-dashboard.html" class="sidebar-logo">
+      <img src="Powered by Werdel Global Systems.png" alt="Forge AI" style="height:64px;width:auto;object-fit:contain;mix-blend-mode:screen;">
+    </a>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="forge-ai-dashboard.html">
+        <span class="nav-item-icon">⚡</span> Dashboard
+      </a>
+      <a class="nav-item" href="forge-ai-report.html" target="_blank">
+        <span class="nav-item-icon">📄</span> Reports
+      </a>
+      <a class="nav-item" href="forge-ai-billing.html">
+        <span class="nav-item-icon">💳</span> Billing
+      </a>
+      <a class="nav-item active" href="forge-ai-settings.html">
+        <span class="nav-item-icon">⚙️</span> Settings
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="agency-info">
+        <div class="agency-label">Agency</div>
+        <div class="agency-name-text" id="agency-name">—</div>
+        <div class="plan-badge free" id="plan-badge">Free</div>
+      </div>
+      <button class="nav-item" onclick="signOut()" style="color:var(--muted)">
+        <span class="nav-item-icon">→</span> Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <div class="page-title">Settings</div>
+    <div class="page-sub">Manage your agency profile, notifications, and account preferences.</div>
+
+    <!-- ── PROFILE ── -->
+    <div class="settings-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(255,136,63,.1)">👤</div>
+        <div>
+          <div class="section-title">Agency Profile</div>
+          <div class="section-desc">Your agency name and account details</div>
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Agency Name</div>
+            <div class="settings-row-desc">Displayed across your dashboard and reports</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="text" class="settings-input" id="agency-name-input" placeholder="Your Agency Name" />
+            <button class="btn-sm" onclick="saveAgencyName()">Save</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Email Address</div>
+            <div class="settings-row-desc">Your account email — used for login and alerts</div>
+          </div>
+          <div id="email-display" style="font-size:13px;color:var(--muted2);font-family:var(--mono)">—</div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Member Since</div>
+            <div class="settings-row-desc">When your Forge AI account was created</div>
+          </div>
+          <div id="member-since" style="font-size:13px;color:var(--muted2);font-family:var(--mono)">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── NOTIFICATIONS ── -->
+    <div class="settings-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(77,159,255,.1)">🔔</div>
+        <div>
+          <div class="section-title">Notifications</div>
+          <div class="section-desc">Control when and how Forge AI alerts you</div>
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Email Alerts</div>
+            <div class="settings-row-desc">Receive email when a site's score drops significantly</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="toggle-email-alerts" checked onchange="saveNotificationSettings()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Score Drop Threshold</div>
+            <div class="settings-row-desc">Send alert when score drops by this many points or more</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <select class="settings-select" id="alert-threshold" onchange="saveNotificationSettings()">
+              <option value="5">5 points</option>
+              <option value="10" selected>10 points</option>
+              <option value="15">15 points</option>
+              <option value="20">20 points</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Dashboard Alerts</div>
+            <div class="settings-row-desc">Show in-dashboard notifications for critical issues</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="toggle-dashboard-alerts" checked onchange="saveNotificationSettings()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCAN SCHEDULE ── -->
+    <div class="settings-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(34,201,122,.1)">⏱</div>
+        <div>
+          <div class="section-title">Scan Schedule</div>
+          <div class="section-desc">When Forge AI automatically scans your client sites</div>
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Automated Daily Scan</div>
+            <div class="settings-row-desc">Forge AI scans all your sites once per day automatically</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="toggle-auto-scan" checked onchange="saveScheduleSettings()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Scan Time</div>
+            <div class="settings-row-desc">What time daily scans run (UTC timezone)</div>
+          </div>
+          <select class="settings-select" id="scan-time" onchange="saveScheduleSettings()">
+            <option value="6">6:00 AM UTC</option>
+            <option value="8" selected>8:00 AM UTC</option>
+            <option value="10">10:00 AM UTC</option>
+            <option value="12">12:00 PM UTC</option>
+            <option value="18">6:00 PM UTC</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── WHITE LABEL ── -->
+    <div class="settings-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(245,166,35,.1)">🏷️</div>
+        <div>
+          <div class="section-title">White Label Reports</div>
+          <div class="section-desc">Customize how your exported reports appear to clients</div>
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Report Agency Name</div>
+            <div class="settings-row-desc">Agency name shown on exported PDF reports</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="text" class="settings-input" id="report-agency-name" placeholder="Your Agency Name" />
+            <button class="btn-sm" onclick="saveWhitelabelSettings()">Save</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Report Tagline</div>
+            <div class="settings-row-desc">Optional tagline shown beneath your agency name</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="text" class="settings-input" id="report-tagline" placeholder="Website Intelligence Platform" />
+            <button class="btn-sm" onclick="saveWhitelabelSettings()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── API TOKEN ── -->
+    <div class="settings-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(255,136,63,.1)">🔑</div>
+        <div>
+          <div class="section-title">API Token</div>
+          <div class="section-desc">Your unique Forge AI token for platform integrations</div>
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Forge AI Token</div>
+            <div class="settings-row-desc">Use this token to connect WordPress, Webflow, and other platforms</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="token-display" id="settings-token">Loading...</div>
+            <button class="btn-sm" onclick="copyToken()">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PIN SECURITY ── -->
+    <div class="settings-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(77,159,255,.1)">🔐</div>
+        <div>
+          <div class="section-title">Security PIN</div>
+          <div class="section-desc">Required to delete your account or change your agency name</div>
+        </div>
+      </div>
+      <div class="settings-card" id="pin-card">
+
+        <!-- No PIN set state -->
+        <div id="pin-not-set" style="display:none">
+          <div class="settings-row">
+            <div class="settings-row-left">
+              <div class="settings-row-label">No PIN set</div>
+              <div class="settings-row-desc">Set a 6-digit PIN to protect sensitive account actions</div>
+            </div>
+            <button class="btn-primary" onclick="showSetPin()">Set PIN</button>
+          </div>
+        </div>
+
+        <!-- PIN set state -->
+        <div id="pin-is-set" style="display:none">
+          <div class="settings-row">
+            <div class="settings-row-left">
+              <div class="settings-row-label">PIN is set ✓</div>
+              <div class="settings-row-desc">Your account is protected. Required to delete account or change agency name.</div>
+            </div>
+            <button class="btn-sm" onclick="showChangePin()">Change PIN</button>
+          </div>
+        </div>
+
+        <!-- Set PIN form -->
+        <div id="pin-set-form" style="display:none">
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:14px">
+            <div>
+              <div class="settings-row-label">Create your PIN</div>
+              <div class="settings-row-desc">Choose a 6-digit PIN you'll remember. You'll need it to delete your account or change your agency name.</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <input type="password" id="pin-new" class="settings-input" placeholder="Enter 6-digit PIN" maxlength="6" style="width:160px;letter-spacing:0.2em;font-size:16px" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+              <input type="password" id="pin-confirm" class="settings-input" placeholder="Confirm PIN" maxlength="6" style="width:160px;letter-spacing:0.2em;font-size:16px" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+              <button class="btn-primary" onclick="savePin()">Save PIN</button>
+              <button class="btn-sm" onclick="cancelPinForm()">Cancel</button>
+            </div>
+            <div id="pin-error" style="display:none;font-size:12px;color:var(--red)"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── DANGER ZONE ── -->
+    <div class="settings-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(255,77,77,.1)">⚠️</div>
+        <div>
+          <div class="section-title">Danger Zone</div>
+          <div class="section-desc">Irreversible actions — proceed with caution</div>
+        </div>
+      </div>
+      <div class="danger-zone">
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-label">Delete Account</div>
+            <div class="settings-row-desc">Permanently delete your Forge AI account and all data. This cannot be undone. PIN confirmation will be required — coming soon.</div>
+          </div>
+          <button class="btn-danger" onclick="confirmDeleteAccount()">Delete Account</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let USER = null;
+let SETTINGS = {};
+
+// ── INIT ──────────────────────────────────────────────────
+async function init() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'forge-ai-login.html'; return; }
+    USER = session.user;
+
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    await loadProfile();
+    await loadSettings();
+    loadPinState();
+    await loadToken();
+  } catch(e) {
+    console.log('Init error:', e.message);
+    window.location.href = 'forge-ai-login.html';
+  }
+}
+
+// ── LOAD PROFILE ──────────────────────────────────────────
+async function loadProfile() {
+  const agencyName = USER.user_metadata?.agency_name || '';
+  document.getElementById('agency-name').textContent = agencyName || 'Your Agency';
+  document.getElementById('agency-name-input').value = agencyName;
+  document.getElementById('email-display').textContent = USER.email || '—';
+  document.getElementById('plan-badge').textContent = 'Free';
+
+  // Member since
+  if (USER.created_at) {
+    const date = new Date(USER.created_at);
+    document.getElementById('member-since').textContent = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  // Load plan
+  try {
+    const { data } = await sb.from('subscriptions').select('plan').eq('user_id', USER.id).maybeSingle();
+    if (data?.plan) {
+      const badge = document.getElementById('plan-badge');
+      badge.textContent = data.plan.charAt(0).toUpperCase() + data.plan.slice(1);
+      badge.className = 'plan-badge ' + data.plan;
+    }
+  } catch(e) {}
+}
+
+// ── LOAD SETTINGS ─────────────────────────────────────────
+async function loadSettings() {
+  try {
+    // Load from user_metadata
+    const meta = USER.user_metadata || {};
+    SETTINGS = meta.forge_settings || {};
+
+    // Notification settings
+    const emailAlerts = SETTINGS.email_alerts !== false;
+    const dashAlerts = SETTINGS.dashboard_alerts !== false;
+    const threshold = SETTINGS.alert_threshold || 10;
+    document.getElementById('toggle-email-alerts').checked = emailAlerts;
+    document.getElementById('toggle-dashboard-alerts').checked = dashAlerts;
+    document.getElementById('alert-threshold').value = threshold;
+
+    // Scan schedule
+    const autoScan = SETTINGS.auto_scan !== false;
+    const scanTime = SETTINGS.scan_time || 8;
+    document.getElementById('toggle-auto-scan').checked = autoScan;
+    document.getElementById('scan-time').value = scanTime;
+
+    // White label
+    const reportName = SETTINGS.report_agency_name || meta.agency_name || '';
+    const reportTagline = SETTINGS.report_tagline || '';
+    document.getElementById('report-agency-name').value = reportName;
+    document.getElementById('report-tagline').value = reportTagline;
+  } catch(e) {
+    console.log('Load settings error:', e.message);
+  }
+}
+
+// ── LOAD TOKEN ────────────────────────────────────────────
+async function loadToken() {
+  try {
+    const { data } = await sb.from('agency_tokens').select('token').eq('user_id', USER.id).maybeSingle();
+    const token = data?.token || '—';
+    document.getElementById('settings-token').textContent = token;
+  } catch(e) {
+    document.getElementById('settings-token').textContent = 'Error loading token';
+  }
+}
+
+// ── SAVE FUNCTIONS ────────────────────────────────────────
+async function saveAgencyName() {
+  const name = document.getElementById('agency-name-input').value.trim();
+  if (!name) { showToast('Please enter an agency name', 'error'); return; }
+  if (!hasPinSet()) { showToast('Please set a security PIN first', 'error'); return; }
+  requirePin('Change your agency name?', async function() {
+    try {
+      await sb.auth.updateUser({ data: { agency_name: name } });
+      document.getElementById('agency-name').textContent = name;
+      showToast('Agency name saved ✓', 'success');
+    } catch(e) {
+      showToast('Error saving: ' + e.message, 'error');
+    }
+  });
+}
+
+async function saveNotificationSettings() {
+  SETTINGS.email_alerts = document.getElementById('toggle-email-alerts').checked;
+  SETTINGS.dashboard_alerts = document.getElementById('toggle-dashboard-alerts').checked;
+  SETTINGS.alert_threshold = parseInt(document.getElementById('alert-threshold').value);
+  await saveSettings('Notification preferences saved ✓');
+}
+
+async function saveScheduleSettings() {
+  SETTINGS.auto_scan = document.getElementById('toggle-auto-scan').checked;
+  SETTINGS.scan_time = parseInt(document.getElementById('scan-time').value);
+  await saveSettings('Scan schedule saved ✓');
+}
+
+async function saveWhitelabelSettings() {
+  SETTINGS.report_agency_name = document.getElementById('report-agency-name').value.trim();
+  SETTINGS.report_tagline = document.getElementById('report-tagline').value.trim();
+  await saveSettings('White label settings saved ✓');
+}
+
+async function saveSettings(message) {
+  try {
+    const currentMeta = USER.user_metadata || {};
+    await sb.auth.updateUser({ data: { ...currentMeta, forge_settings: SETTINGS } });
+    showToast(message || 'Settings saved ✓', 'success');
+  } catch(e) {
+    showToast('Error saving: ' + e.message, 'error');
+  }
+}
+
+function copyToken() {
+  const token = document.getElementById('settings-token').textContent;
+  if (!token || token === '—') return;
+  navigator.clipboard.writeText(token).then(function() {
+    showToast('Token copied to clipboard ✓', 'success');
+  });
+}
+
+function confirmDeleteAccount() {
+  if (!hasPinSet()) {
+    showToast('Please set a security PIN first before deleting your account', 'error');
+    return;
+  }
+  requirePin('Delete your account permanently?', async function() {
+    try {
+      showToast('Deleting account...', 'success');
+      // Delete user data first
+      await sb.from('user_sites').delete().eq('user_id', USER.id);
+      await sb.from('agency_tokens').delete().eq('user_id', USER.id);
+      await sb.from('realtime_alerts').delete().eq('user_id', USER.id);
+      // Sign out - admin deletion happens server side
+      await sb.auth.signOut();
+      window.location.href = 'forge-ai-login.html';
+    } catch(e) {
+      showToast('Error deleting account: ' + e.message, 'error');
+    }
+  });
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  window.location.href = 'forge-ai-login.html';
+}
+
+// ── TOAST ─────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  toast.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+  toast.className = 'toast ' + (type || 'success');
+  toast.style.display = 'flex';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { toast.style.display = 'none'; }, 3000);
+}
+
+init();
+
+
+// ── PIN SYSTEM ────────────────────────────────────────────
+function hashPin(pin) {
+  // Simple hash - XOR with salt for basic obfuscation
+  // Not cryptographic but sufficient for this use case
+  let hash = 0;
+  const salt = 'forgeai_' + (USER ? USER.id.slice(0,8) : 'x');
+  const str = salt + pin;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString(36);
+}
+
+function hasPinSet() {
+  const meta = USER?.user_metadata || {};
+  return !!(meta.forge_settings?.pin_hash);
+}
+
+function loadPinState() {
+  const pinNotSet = document.getElementById('pin-not-set');
+  const pinIsSet = document.getElementById('pin-is-set');
+  const pinSetForm = document.getElementById('pin-set-form');
+  if (!pinNotSet) return;
+
+  if (hasPinSet()) {
+    pinNotSet.style.display = 'none';
+    pinIsSet.style.display = 'block';
+    pinSetForm.style.display = 'none';
+  } else {
+    pinNotSet.style.display = 'block';
+    pinIsSet.style.display = 'none';
+    pinSetForm.style.display = 'none';
+  }
+}
+
+function showSetPin() {
+  document.getElementById('pin-not-set').style.display = 'none';
+  document.getElementById('pin-is-set').style.display = 'none';
+  document.getElementById('pin-set-form').style.display = 'block';
+  document.getElementById('pin-new').value = '';
+  document.getElementById('pin-confirm').value = '';
+  document.getElementById('pin-new').focus();
+}
+
+function showChangePin() {
+  // Must verify current PIN before allowing change
+  requirePin('Enter your current PIN to change it', function() {
+    document.getElementById('pin-not-set').style.display = 'none';
+    document.getElementById('pin-is-set').style.display = 'none';
+    document.getElementById('pin-set-form').style.display = 'block';
+    document.getElementById('pin-new').value = '';
+    document.getElementById('pin-confirm').value = '';
+    document.getElementById('pin-error').style.display = 'none';
+    document.getElementById('pin-new').focus();
+  });
+}
+
+function cancelPinForm() {
+  loadPinState();
+  document.getElementById('pin-error').style.display = 'none';
+}
+
+async function savePin() {
+  const pin = document.getElementById('pin-new').value.trim();
+  const confirm = document.getElementById('pin-confirm').value.trim();
+  const errEl = document.getElementById('pin-error');
+
+  if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+    errEl.textContent = 'PIN must be exactly 6 digits';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (pin !== confirm) {
+    errEl.textContent = 'PINs do not match';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  errEl.style.display = 'none';
+
+  try {
+    const pinHash = hashPin(pin);
+    SETTINGS.pin_hash = pinHash;
+    await sb.auth.updateUser({ data: { ...USER.user_metadata, forge_settings: SETTINGS } });
+
+    // Update local USER object
+    const { data: { user } } = await sb.auth.getUser();
+    if (user) USER = user;
+
+    showToast('PIN set successfully ✓', 'success');
+    loadPinState();
+  } catch(e) {
+    errEl.textContent = 'Error saving PIN: ' + e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+function requirePin(action, callback) {
+  // Create PIN modal
+  const existing = document.getElementById('pin-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'pin-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:28px;width:100%;max-width:360px;box-shadow:0 24px 60px rgba(0,0,0,0.6)">
+      <div style="font-size:16px;font-weight:700;margin-bottom:6px">Enter your PIN</div>
+      <div style="font-size:12.5px;color:var(--muted2);margin-bottom:20px">${action}</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">
+        <input type="password" id="pin-modal-input" maxlength="6"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px;color:var(--text);font-family:var(--mono);font-size:20px;text-align:center;letter-spacing:0.3em;outline:none;transition:border-color 0.15s"
+          placeholder="• • • • • •"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='var(--border2)'"
+          onkeydown="if(event.key==='Enter')document.getElementById('pin-modal-confirm').click()">
+      </div>
+      <div id="pin-modal-error" style="display:none;font-size:12px;color:var(--red);text-align:center;margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="document.getElementById('pin-modal').remove()"
+          style="flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--muted2);padding:9px;border-radius:8px;font-family:var(--font);font-size:13px;cursor:pointer">
+          Cancel
+        </button>
+        <button id="pin-modal-confirm"
+          style="flex:1;background:var(--accent);border:none;color:#fff;padding:9px;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer"
+          onclick="verifyPin()">
+          Confirm
+        </button>
+      </div>
+    </div>`;
+
+  // Store callback on window temporarily
+  window._pinCallback = callback;
+  document.body.appendChild(modal);
+  setTimeout(function() { document.getElementById('pin-modal-input').focus(); }, 50);
+}
+
+function verifyPin() {
+  const input = document.getElementById('pin-modal-input');
+  const errEl = document.getElementById('pin-modal-error');
+  const pin = input ? input.value.trim() : '';
+
+  if (!pin || pin.length !== 6) {
+    if (errEl) { errEl.textContent = 'Please enter your 6-digit PIN'; errEl.style.display = 'block'; }
+    return;
+  }
+
+  const pinHash = hashPin(pin);
+  const storedHash = USER && USER.user_metadata && USER.user_metadata.forge_settings
+    ? USER.user_metadata.forge_settings.pin_hash
+    : null;
+
+  if (!storedHash || pinHash !== storedHash) {
+    if (errEl) { errEl.textContent = 'Incorrect PIN. Please try again.'; errEl.style.display = 'block'; }
+    if (input) { input.value = ''; input.focus(); }
+    return;
+  }
+
+  // PIN correct - execute callback
+  const modal = document.getElementById('pin-modal');
+  if (modal) modal.remove();
+  if (window._pinCallback) {
+    const cb = window._pinCallback;
+    window._pinCallback = null;
+    cb();
+  }
+}
+
+</script>
+</body>
+</html>
