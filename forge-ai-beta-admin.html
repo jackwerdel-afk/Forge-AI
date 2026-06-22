@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI — Beta Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#07070c;--bg2:#0e0e18;--bg3:#12121f;--accent:#FF883F;--green:#22c97a;--red:#ff4d4d;--yellow:#f5a623;--text:#f0f0f8;--muted:#70708a;--border:rgba(255,255,255,0.07)}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+
+/* AUTH SCREEN */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px;width:100%;max-width:380px}
+.auth-logo{font-size:20px;font-weight:800;color:var(--accent);margin-bottom:8px}
+.auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.auth-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:14px;color:var(--text);font-family:'Inter',sans-serif;outline:none;margin-bottom:14px}
+.auth-input:focus{border-color:rgba(255,136,63,0.4)}
+.auth-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif}
+.auth-error{font-size:13px;color:var(--red);margin-top:10px;display:none}
+
+/* APP */
+#app{display:none;min-height:100vh}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:18px 40px;display:flex;align-items:center;justify-content:space-between}
+.header-logo{font-size:18px;font-weight:800;color:var(--text)}
+.header-logo span{color:var(--accent)}
+.header-sub{font-size:13px;color:var(--muted)}
+.stats-bar{display:flex;gap:20px;padding:24px 40px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.stat-pill{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:14px 20px;display:flex;flex-direction:column;gap:4px;min-width:130px}
+.stat-num{font-size:26px;font-weight:800;letter-spacing:-0.03em}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+.spots-bar{flex:1;display:flex;align-items:center;gap:12px;min-width:200px}
+.spots-track{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden}
+.spots-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--accent));border-radius:4px;transition:width 0.5s ease}
+.spots-text{font-size:13px;font-weight:600;white-space:nowrap}
+
+main{padding:32px 40px}
+.filters{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+.filter-btn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s}
+.filter-btn.active,.filter-btn:hover{border-color:rgba(255,136,63,0.4);color:var(--accent);background:rgba(255,136,63,0.06)}
+
+.apps-list{display:flex;flex-direction:column;gap:12px}
+.app-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;display:flex;align-items:flex-start;gap:20px;transition:border-color 0.2s}
+.app-card.approved{border-color:rgba(34,201,122,0.2)}
+.app-card.rejected{opacity:0.5}
+.app-avatar{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,rgba(255,136,63,0.3),rgba(139,92,246,0.3));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--text);flex-shrink:0}
+.app-info{flex:1;min-width:0}
+.app-name{font-size:15px;font-weight:700;margin-bottom:3px}
+.app-agency{font-size:13px;color:var(--muted);margin-bottom:6px}
+.app-email{font-size:12px;color:var(--muted);font-family:monospace;margin-bottom:8px}
+.app-website{font-size:12px;color:var(--accent);text-decoration:none;display:block;margin-bottom:8px}
+.app-reason{font-size:13px;color:rgba(240,240,248,0.7);line-height:1.5;background:rgba(255,255,255,0.03);border-radius:6px;padding:10px 12px;border-left:2px solid rgba(255,136,63,0.3)}
+.app-meta{font-size:11px;color:var(--muted);margin-top:8px}
+.app-status{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.status-badge{font-size:11px;font-weight:700;padding:4px 12px;border-radius:100px;text-transform:uppercase;letter-spacing:0.06em}
+.status-pending{background:rgba(245,166,35,0.1);color:var(--yellow);border:1px solid rgba(245,166,35,0.2)}
+.status-approved{background:rgba(34,201,122,0.1);color:var(--green);border:1px solid rgba(34,201,122,0.2)}
+.status-rejected{background:rgba(255,77,77,0.1);color:var(--red);border:1px solid rgba(255,77,77,0.2)}
+.action-btns{display:flex;gap:8px}
+.btn-approve{padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:var(--green);color:#07070c;font-family:'Inter',sans-serif;transition:all 0.2s}
+.btn-approve:hover{opacity:0.85;transform:translateY(-1px)}
+.btn-reject{padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;border:1px solid rgba(255,77,77,0.3);cursor:pointer;background:transparent;color:var(--red);font-family:'Inter',sans-serif;transition:all 0.2s}
+.btn-reject:hover{background:rgba(255,77,77,0.08);transform:translateY(-1px)}
+.btn-disabled{padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:default}
+.empty{text-align:center;padding:80px 24px;color:var(--muted);font-size:15px}
+.invite-link{font-size:11px;font-family:monospace;color:var(--green);background:rgba(34,201,122,0.06);border:1px solid rgba(34,201,122,0.15);border-radius:6px;padding:5px 10px;word-break:break-all;margin-top:4px;max-width:260px;display:block}
+.loading{text-align:center;padding:60px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">Forge AI</div>
+    <div class="auth-sub">Beta Admin — restricted access</div>
+    <input type="password" class="auth-input" id="secret-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')login()">
+    <button class="auth-btn" onclick="login()">Access Admin →</button>
+    <div class="auth-error" id="auth-error">Incorrect password</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div>
+      <div class="header-logo">Forge <span>AI</span> — Beta Admin</div>
+      <div class="header-sub">Manage beta applications and invites</div>
+    </div>
+    <div style="font-size:13px;color:var(--muted)">by Werdel Global Systems</div>
+  </header>
+
+  <div class="stats-bar">
+    <div class="stat-pill">
+      <div class="stat-num" id="stat-total" style="color:var(--text)">—</div>
+      <div class="stat-label">Total Applications</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-num" id="stat-pending" style="color:var(--yellow)">—</div>
+      <div class="stat-label">Pending Review</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-num" id="stat-approved" style="color:var(--green)">—</div>
+      <div class="stat-label">Approved</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-num" id="stat-rejected" style="color:var(--red)">—</div>
+      <div class="stat-label">Rejected</div>
+    </div>
+    <div class="stat-pill spots-bar">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-size:11px">Beta spots</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="spots-track"><div class="spots-fill" id="spots-fill" style="width:0%"></div></div>
+        <div class="spots-text" id="spots-text">—/10</div>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('pending',this)">Pending</button>
+      <button class="filter-btn" onclick="setFilter('approved',this)">Approved</button>
+      <button class="filter-btn" onclick="setFilter('rejected',this)">Rejected</button>
+    </div>
+    <div class="apps-list" id="apps-list">
+      <div class="loading">Loading applications...</div>
+    </div>
+  </main>
+</div>
+
+<script>
+let ADMIN_SECRET = '';
+let ALL_APPS = [];
+let currentFilter = 'all';
+
+function login() {
+  const val = document.getElementById('secret-input').value.trim();
+  if (!val) return;
+  ADMIN_SECRET = val;
+  loadApps();
+}
+
+async function loadApps() {
+  try {
+    const res = await fetch('https://forgeai-wgs.com/api/beta-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ADMIN_SECRET}` },
+      body: JSON.stringify({ action: 'list' })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      document.getElementById('auth-error').style.display = 'block';
+      return;
+    }
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('auth-error').style.display = 'none';
+    ALL_APPS = data.applications || [];
+    updateStats();
+    renderApps();
+  } catch(e) {
+    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('auth-error').textContent = 'Connection error. Try again.';
+  }
+}
+
+function updateStats() {
+  const total = ALL_APPS.length;
+  const pending = ALL_APPS.filter(a => a.status === 'pending').length;
+  const approved = ALL_APPS.filter(a => a.status === 'approved').length;
+  const rejected = ALL_APPS.filter(a => a.status === 'rejected').length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-rejected').textContent = rejected;
+  document.getElementById('spots-fill').style.width = (approved / 10 * 100) + '%';
+  document.getElementById('spots-text').textContent = approved + '/10';
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderApps();
+}
+
+function renderApps() {
+  const list = document.getElementById('apps-list');
+  const filtered = currentFilter === 'all' ? ALL_APPS : ALL_APPS.filter(a => a.status === currentFilter);
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty">No ${currentFilter === 'all' ? '' : currentFilter + ' '}applications yet</div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(a => {
+    const initials = a.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const date = new Date(a.created_at).toLocaleDateString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const statusBadge = `<div class="status-badge status-${a.status}">${a.status}</div>`;
+    let actions = '';
+    if (a.status === 'pending') {
+      actions = `<div class="action-btns">
+        <button class="btn-approve" onclick="act('${a.id}','approve')">✓ Approve</button>
+        <button class="btn-reject" onclick="act('${a.id}','reject')">✕ Reject</button>
+      </div>`;
+    } else if (a.status === 'approved') {
+      const inviteUrl = `https://forgeai-wgs.com/forge-ai-signup.html?beta=${a.invite_token}`;
+      actions = `<a class="invite-link" href="${inviteUrl}" target="_blank" title="Copy invite link">${inviteUrl.slice(0,50)}...</a>`;
+    } else {
+      actions = `<div class="btn-disabled">Processed</div>`;
+    }
+    return `<div class="app-card ${a.status}" id="card-${a.id}">
+      <div class="app-avatar">${initials}</div>
+      <div class="app-info">
+        <div class="app-name">${esc(a.name)}</div>
+        <div class="app-agency">${esc(a.agency_name)}</div>
+        <div class="app-email">${esc(a.email)}</div>
+        ${a.website ? `<a class="app-website" href="${esc(a.website)}" target="_blank">${esc(a.website)}</a>` : ''}
+        ${a.reason ? `<div class="app-reason">"${esc(a.reason)}"</div>` : ''}
+        <div class="app-meta">Applied ${date}</div>
+      </div>
+      <div class="app-status">
+        ${statusBadge}
+        ${actions}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function act(id, action) {
+  const card = document.getElementById('card-' + id);
+  if (card) card.style.opacity = '0.5';
+  try {
+    const res = await fetch('https://forgeai-wgs.com/api/beta-approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ADMIN_SECRET}` },
+      body: JSON.stringify({ id, action })
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Error'); if(card) card.style.opacity='1'; return; }
+    // Update local state
+    const app = ALL_APPS.find(a => a.id === id);
+    if (app) {
+      app.status = action === 'approve' ? 'approved' : 'rejected';
+      if (action === 'approve' && data.inviteUrl) {
+        const token = data.inviteUrl.split('beta=')[1];
+        app.invite_token = token;
+      }
+    }
+    updateStats();
+    renderApps();
+  } catch(e) {
+    alert('Error: ' + e.message);
+    if(card) card.style.opacity='1';
+  }
+}
+
+function esc(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Allow Enter key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('auth-screen').style.display !== 'none') login();
+});
+</script>
+</body>
+</html>
