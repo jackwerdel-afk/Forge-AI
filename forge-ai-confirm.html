@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirming your account — Forge AI</title>
+  <link rel="icon" href="https://raw.githubusercontent.com/werdel-studios/forge-ai/main/Powered%20by%20Werdel%20Global%20Systems.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 440px;
+      text-align: center;
+    }
+
+    .logo {
+      height: 52px;
+      display: block;
+      margin: 0 auto 32px;
+      mix-blend-mode: screen;
+    }
+
+    .icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 24px;
+    }
+
+    .icon.loading { background: #1a1a2e; animation: pulse 1.5s ease-in-out infinite; }
+    .icon.success { background: #0d2818; }
+    .icon.error   { background: #2a0a0a; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+
+    p { color: #888; font-size: 15px; line-height: 1.6; margin-bottom: 28px; }
+
+    .btn {
+      display: inline-block;
+      background: #f97316;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      letter-spacing: 0.3px;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #ea6c0a; }
+
+    .btn-ghost {
+      display: inline-block;
+      color: #888;
+      font-size: 13px;
+      text-decoration: none;
+      margin-top: 16px;
+    }
+    .btn-ghost:hover { color: #fff; }
+
+    #state-loading, #state-success, #state-error { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <img
+    src="https://raw.githubusercontent.com/werdel-studios/forge-ai/main/Powered%20by%20Werdel%20Global%20Systems.png"
+    alt="Forge AI"
+    class="logo"
+    onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block';"
+  />
+  <div id="logo-fallback" style="display:none;font-size:22px;font-weight:800;letter-spacing:-0.5px;margin-bottom:32px;">
+    Forge <span style="color:#f97316;">AI</span>
+  </div>
+
+  <!-- Loading -->
+  <div id="state-loading">
+    <div class="icon loading">⏳</div>
+    <h1>Confirming your account…</h1>
+    <p>Just a moment while we verify your email address.</p>
+  </div>
+
+  <!-- Success -->
+  <div id="state-success">
+    <div class="icon success">✅</div>
+    <h1>Email confirmed!</h1>
+    <p>Your Forge AI account is now active. Sign in to get started.</p>
+    <a href="/forge-ai-login.html" class="btn">Sign in to Forge AI</a>
+  </div>
+
+  <!-- Error -->
+  <div id="state-error">
+    <div class="icon error">⚠️</div>
+    <h1 id="error-title">Something went wrong</h1>
+    <p id="error-msg">This confirmation link may have expired or already been used.</p>
+    <a href="/forge-ai-signup.html" class="btn">Back to sign up</a><br>
+    <a href="/forge-ai-login.html" class="btn-ghost">Already have an account? Sign in</a>
+  </div>
+</div>
+
+<script>
+  function show(id) {
+    ['state-loading','state-success','state-error'].forEach(s => {
+      document.getElementById(s).style.display = s === id ? 'block' : 'none';
+    });
+  }
+
+  async function confirm() {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    if (!token) {
+      show('state-error');
+      document.getElementById('error-title').textContent = 'Invalid link';
+      document.getElementById('error-msg').textContent = 'This confirmation link is missing a token. Please use the link from your email.';
+      return;
+    }
+
+    show('state-loading');
+
+    try {
+      const res = await fetch(`/api/confirm-email?token=${encodeURIComponent(token)}`);
+
+      // confirm-email redirects on success/failure — if fetch followed it, check final URL
+      if (res.redirected) {
+        const url = new URL(res.url);
+        const confirmed = url.searchParams.get('confirmed');
+
+        if (confirmed === 'true' || confirmed === 'already') {
+          show('state-success');
+        } else if (confirmed === 'expired') {
+          show('state-error');
+          document.getElementById('error-title').textContent = 'Link expired';
+          document.getElementById('error-msg').textContent = 'This confirmation link expired after 24 hours. Sign up again to get a new one.';
+        } else {
+          show('state-error');
+        }
+      } else if (res.ok) {
+        show('state-success');
+      } else {
+        show('state-error');
+      }
+    } catch (err) {
+      // Redirect was followed by the browser — we're on the success/error page
+      // This page itself handles the redirect target, so check our own URL
+      const params2 = new URLSearchParams(window.location.search);
+      if (params2.get('confirmed') === 'true') {
+        show('state-success');
+      } else {
+        show('state-error');
+      }
+    }
+  }
+
+  confirm();
+</script>
+
+</body>
+</html>
