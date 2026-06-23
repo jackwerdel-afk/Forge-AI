@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accept Invitation — Forge AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #080809; color: #f0f0f2; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.card { background: #111114; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 2.5rem; width: 100%; max-width: 420px; }
+.logo { display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; }
+.logo-mark { width: 32px; height: 32px; background: #ff6b35; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; color: #fff; }
+.logo-text { font-size: 1rem; font-weight: 700; }
+h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+.subtitle { font-size: 0.85rem; color: #9090a0; margin-bottom: 2rem; line-height: 1.6; }
+.invite-info { background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.2); border-radius: 8px; padding: 12px 16px; margin-bottom: 1.5rem; }
+.invite-info-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #9090a0; margin-bottom: 4px; }
+.invite-info-value { font-size: 0.9rem; font-weight: 600; }
+.role-badge { display: inline-block; background: rgba(255,107,53,0.15); color: #ff6b35; padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-top: 4px; }
+.field { margin-bottom: 1rem; }
+label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.07em; color: #9090a0; margin-bottom: 6px; font-weight: 600; }
+input { width: 100%; background: #1a1a1d; border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; padding: 10px 14px; color: #f0f0f2; font-family: 'Inter', sans-serif; font-size: 0.88rem; outline: none; transition: border-color 0.15s; }
+input:focus { border-color: #ff6b35; }
+input::placeholder { color: #6b6b78; }
+input:disabled { opacity: 0.5; }
+.btn { width: 100%; background: #ff6b35; color: #fff; border: none; padding: 12px; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.15s; margin-top: 0.5rem; }
+.btn:hover { background: #ff8c5a; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.msg { padding: 10px 14px; border-radius: 7px; font-size: 0.82rem; margin-top: 1rem; display: none; }
+.msg.error { background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.2); color: #ff8080; }
+.msg.success { background: rgba(34,201,122,0.1); border: 1px solid rgba(34,201,122,0.2); color: #22c97a; }
+.loading { text-align: center; padding: 2rem; color: #9090a0; }
+.expired { text-align: center; padding: 1rem; }
+.expired-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.expired-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: #ff8080; }
+.expired-sub { font-size: 0.85rem; color: #9090a0; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <img src="https://raw.githubusercontent.com/jackwerdel-afk/Forge-AI/main/Powered%20by%20Werdel%20Global%20Systems.png" alt="Forge AI" style="height:38px;mix-blend-mode:screen;filter:brightness(1.2)" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'">
+    <div id="logo-fallback" style="display:none;align-items:center;gap:8px">
+      <div class="logo-mark">F</div>
+      <div class="logo-text">Forge AI</div>
+    </div>
+  </div>
+
+  <div id="loading-state" class="loading">Validating invitation...</div>
+  <div id="expired-state" class="expired" style="display:none">
+    <div class="expired-icon">⚠️</div>
+    <div class="expired-title" id="expired-title">Invitation Expired</div>
+    <div class="expired-sub" id="expired-msg">This invitation is no longer valid. Please ask your agency owner to send a new invitation.</div>
+  </div>
+
+  <div id="form-state" style="display:none">
+    <h1 id="form-title">Accept Invitation</h1>
+    <p class="subtitle" id="invite-subtitle">You've been invited to join a team on Forge AI.</p>
+
+    <div class="invite-info">
+      <div class="invite-info-label">Joining as</div>
+      <div class="invite-info-value" id="invite-agency">—</div>
+      <div class="role-badge" id="invite-role">—</div>
+    </div>
+
+    <div class="field">
+      <label>Your Email</label>
+      <input type="email" id="invite-email" disabled>
+    </div>
+    <div id="new-account-fields">
+      <div class="field">
+        <label>Your Full Name</label>
+        <input type="text" id="invite-name" placeholder="John Smith" autocomplete="name">
+      </div>
+      <div class="field">
+        <label>Create Password</label>
+        <input type="password" id="invite-password" placeholder="At least 8 characters" autocomplete="new-password">
+      </div>
+    </div>
+
+    <button class="btn" id="accept-btn" onclick="acceptInvite()">Create Account & Join Team →</button>
+    <div class="msg error" id="error-msg"></div>
+    <div class="msg success" id="success-msg"></div>
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  'https://mybvzjcjfjytcfgitmpv.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs'
+);
+
+const params = new URLSearchParams(window.location.search);
+const token = params.get('token');
+
+async function validateToken() {
+  if (!token) {
+    showExpired('Invalid Link', 'This invitation link is invalid. Please check your email for the correct link.');
+    return;
+  }
+
+  try {
+    const res = await fetch('https://forgeai-wgs.com/api/accept-invite?token=' + token);
+    const data = await res.json();
+
+    if (!res.ok || !data.valid) {
+      showExpired('Invitation Invalid', data.error || 'This invitation is no longer valid.');
+      return;
+    }
+
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('form-state').style.display = 'block';
+    document.getElementById('invite-email').value = data.email;
+    document.getElementById('invite-agency').textContent = data.agency_name;
+    document.getElementById('invite-role').textContent = data.role.charAt(0).toUpperCase() + data.role.slice(1);
+    document.getElementById('invite-subtitle').textContent = 'You\'ve been invited to join ' + data.agency_name + ' on Forge AI.';
+
+  } catch(e) {
+    showExpired('Error', 'Could not validate invitation. Please try again.');
+  }
+}
+
+function showExpired(title, msg) {
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('expired-state').style.display = 'block';
+  document.getElementById('expired-title').textContent = title;
+  document.getElementById('expired-msg').textContent = msg;
+}
+
+async function acceptInvite() {
+  const name = document.getElementById('invite-name').value.trim();
+  const password = document.getElementById('invite-password').value;
+  const btn = document.getElementById('accept-btn');
+  const errorMsg = document.getElementById('error-msg');
+  const successMsg = document.getElementById('success-msg');
+
+  errorMsg.style.display = 'none';
+  successMsg.style.display = 'none';
+
+  if (!name) { showError('Please enter your full name.'); return; }
+  if (!password || password.length < 8) { showError('Password must be at least 8 characters.'); return; }
+
+  btn.textContent = 'Creating account...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('https://forgeai-wgs.com/api/accept-invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, name, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showError(data.error || 'Could not create account. Please try again.');
+      btn.textContent = 'Create Account & Join Team →';
+      btn.disabled = false;
+      return;
+    }
+
+    successMsg.textContent = '✓ Account created! Signing you in...';
+    successMsg.style.display = 'block';
+
+    const email = document.getElementById('invite-email').value;
+    const { error: signInError } = await sb.auth.signInWithPassword({ email, password });
+
+    if (signInError) {
+      successMsg.textContent = '✓ Account created! Please sign in to continue.';
+      setTimeout(function() { window.location.href = 'forge-ai-login.html'; }, 2000);
+    } else {
+      setTimeout(function() { window.location.href = 'forge-ai-dashboard.html'; }, 1500);
+    }
+
+  } catch(e) {
+    showError('Server error. Please try again.');
+    btn.textContent = 'Create Account & Join Team →';
+    btn.disabled = false;
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') acceptInvite();
+});
+
+validateToken();
+</script>
+</body>
+</html>
