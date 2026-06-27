@@ -6,6 +6,11 @@
       "schedule": "0 8 * * *"
     }
   ],
+  "functions": {
+    "api/scheduled-scan.js": {
+      "maxDuration": 300
+    }
+  },
   "headers": [
     {
       "source": "/forge-ai-wordpress-plugin.zip",
