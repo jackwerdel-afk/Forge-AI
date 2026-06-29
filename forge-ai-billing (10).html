@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI — Billing</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root {
+  --bg: #09090f; --sidebar: #111117; --surface: #111117; --surface2: #17171f;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --text: #f0f0f5; --text2: #a0a0b0; --muted: #606070; --muted2: #9090a8;
+  --accent: #FF883F; --accent2: #ff6b20;
+  --green: #22c97a; --red: #ff4d4d; --yellow: #f5a623; --blue: #4d9fff;
+  --font: 'Inter', -apple-system, sans-serif; --mono: 'JetBrains Mono', monospace;
+  --sidebar-width: 220px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+.layout { display: flex; min-height: 100vh; }
+.sidebar { width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; overflow-y: auto; }
+.sidebar-logo { display: flex; align-items: center; justify-content: center; padding: 22px 18px 18px; border-bottom: 1px solid var(--border); text-decoration: none; }
+.sidebar-nav { flex: 1; padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; color: var(--muted2); text-decoration: none; font-size: 13px; font-weight: 500; transition: all 0.15s; cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: rgba(255,136,63,0.1); color: var(--accent); font-weight: 600; }
+.nav-item-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+.sidebar-bottom { padding: 10px 10px 14px; border-top: 1px solid var(--border); }
+.agency-info { padding: 8px 12px; margin-bottom: 4px; }
+.agency-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+.agency-name-text { font-size: 13px; font-weight: 600; color: var(--text2); }
+.plan-badge { display: inline-flex; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; font-family: var(--mono); margin-top: 4px; }
+.plan-badge.free { background: rgba(107,107,120,.15); color: var(--muted2); }
+.plan-badge.starter { background: rgba(77,159,255,.12); color: var(--blue); }
+.plan-badge.agency { background: rgba(34,201,122,.12); color: var(--green); }
+.plan-badge.enterprise { background: rgba(255,107,53,.12); color: var(--accent); }
+.main { margin-left: var(--sidebar-width); flex: 1; padding: 36px 40px; max-width: 860px; }
+.page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 5px; }
+.page-sub { font-size: 13px; color: var(--muted2); margin-bottom: 32px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+.card-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+.plan-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.plan-name { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px; }
+.plan-desc { font-size: 12.5px; color: var(--muted2); }
+.plan-price { font-size: 28px; font-weight: 800; letter-spacing: -0.04em; color: var(--accent); }
+.plan-period { font-size: 12px; color: var(--muted); }
+.stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 16px; }
+.stat-item { background: var(--surface2); border-radius: 10px; padding: 16px 18px; }
+.stat-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.stat-value { font-size: 24px; font-weight: 800; letter-spacing: -0.04em; }
+.btn-primary { background: var(--accent); color: #fff; border: none; padding: 9px 18px; border-radius: 8px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-decoration: none; display: inline-block; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-ghost { background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); padding: 9px 18px; border-radius: 8px; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-block; }
+.feature-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.feature-list li { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text2); }
+.feature-list li::before { content: "✓"; color: var(--green); font-weight: 700; flex-shrink: 0; }
+.loading { text-align: center; padding: 60px 20px; color: var(--muted); }
+::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:var(--surface2); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div id="auth-check" style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+  <div style="text-align:center">
+    <div style="width:36px;height:36px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 14px"></div>
+    <div style="font-size:13px;color:var(--muted)">Loading...</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<div class="layout">
+
+              <aside class="sidebar">
+      <a href="forge-ai-dashboard.html" class="sidebar-logo">
+        <img src="Powered by Werdel Global Systems.png" alt="Forge AI" style="height:80px;width:auto;object-fit:contain;mix-blend-mode:screen;" onerror="this.style.display='none'">
+      </a>
+      <nav class="sidebar-nav">
+      <a class="nav-item" href="forge-ai-dashboard.html"><span class="nav-item-icon">⚡</span> Dashboard</a>
+      <a class="nav-item" href="forge-ai-report.html"><span class="nav-item-icon">📄</span> Reports</a>
+      <a class="nav-item" id="alerts-nav" href="forge-ai-dashboard.html#alerts"><span class="nav-item-icon">🔔</span> Alerts</a>
+      <a class="nav-item" id="connections-nav" style="display:none" href="forge-ai-dashboard.html#connections"><span class="nav-item-icon">🔗</span> Connections</a>
+      <a class="nav-item" id="team-nav" style="display:none" href="forge-ai-team.html"><span class="nav-item-icon">👥</span> Team</a>
+      <a class="nav-item" href="forge-ai-agent.html"><span class="nav-item-icon">🤖</span> Forge Agent</a>
+      <a class="nav-item active" id="billing-nav" href="forge-ai-billing.html"><span class="nav-item-icon">💳</span> Billing</a>
+      <a class="nav-item" id="settings-nav" href="forge-ai-settings.html"><span class="nav-item-icon">⚙️</span> Settings</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div style="padding:12px 10px">
+          <div style="font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Agency</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)" id="sb-agency-name">—</div>
+          <div style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;background:rgba(107,107,120,0.15);color:#70708a" id="sb-plan-badge">Free</div>
+        </div>
+        <button class="nav-item" onclick="doSignOut()" style="color:var(--muted2);width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit">
+          <span class="nav-item-icon">→</span> Sign out
+        </button>
+      </div>
+    </aside>
+
+  <main class="main">
+    <div class="page-title">Account & Billing</div>
+    <div class="page-sub">Manage your Forge AI subscription and usage.</div>
+
+    <div id="billing-loading" class="loading">
+      <div style="width:32px;height:32px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px"></div>
+      Loading your account...
+    </div>
+
+    <div id="billing-content" style="display:none">
+
+      <!-- Current Plan -->
+      <div class="card">
+        <div class="card-title">Current Plan</div>
+        <div class="plan-card">
+          <div>
+            <div class="plan-name" id="plan-name">Free</div>
+            <div class="plan-desc" id="plan-desc">3 sites · Basic scanning · Email alerts</div>
+            <div id="billing-date-row" style="display:none;font-size:11px;color:var(--muted2);margin-top:6px;font-family:var(--mono)">Next billing: <span id="billing-date">—</span></div>
+          </div>
+          <div style="text-align:right">
+            <div class="plan-price" id="plan-price">$0</div>
+            <div class="plan-period">/month</div>
+          </div>
+        </div>
+        <div id="manage-sub-row" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <button onclick="openCustomerPortal()" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all 0.15s" onmouseover="this.style.borderColor='var(--border)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'">⚙ Manage Subscription</button>
+          <div style="font-size:11px;color:var(--muted2);margin-top:6px">Cancel, update payment method, or view invoices via Stripe</div>
+        </div>
+      </div>
+
+      <!-- Usage Stats -->
+      <div class="stat-row">
+        <div class="stat-item">
+          <div class="stat-label">Sites Used</div>
+          <div class="stat-value" id="sites-used">—</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Sites Limit</div>
+          <div class="stat-value" id="sites-limit">—</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Total Scans</div>
+          <div class="stat-value" id="total-scans">—</div>
+        </div>
+      </div>
+
+      <!-- Upgrade CTA (shown for non-enterprise) -->
+      <div class="card" id="upgrade-card">
+        <div class="card-title">Upgrade Your Plan</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:4px">Starter</div>
+            <div style="font-size:22px;font-weight:800;color:var(--blue);margin-bottom:8px">$49<span style="font-size:12px;font-weight:400;color:var(--muted)">/mo</span></div>
+            <ul class="feature-list" style="font-size:12px">
+              <li>5 client sites</li>
+              <li>Wix & Squarespace</li>
+              <li>Priority support</li>
+            </ul>
+          </div>
+          <div style="background:var(--surface2);border:1px solid rgba(255,136,63,.3);border-radius:10px;padding:18px;position:relative">
+            <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;white-space:nowrap">MOST POPULAR</div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:4px">Agency</div>
+            <div style="font-size:22px;font-weight:800;color:var(--accent);margin-bottom:8px">$149<span style="font-size:12px;font-weight:400;color:var(--muted)">/mo</span></div>
+            <ul class="feature-list" style="font-size:12px">
+              <li>25 client sites</li>
+              <li>All platforms</li>
+              <li>Auto-maintenance</li>
+            </ul>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:4px">Enterprise</div>
+            <div style="font-size:22px;font-weight:800;color:var(--green);margin-bottom:8px">$399<span style="font-size:12px;font-weight:400;color:var(--muted)">/mo</span></div>
+            <ul class="feature-list" style="font-size:12px">
+              <li>Unlimited sites</li>
+              <li>API access</li>
+              <li>Priority support</li>
+            </ul>
+          </div>
+        </div>
+        <a href="forge-ai-pricing.html" class="btn-primary">View All Plans →</a>
+      </div>
+
+    </div>
+  </main>
+</div>
+</div>
+
+<script>
+const SUPA_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let USER = null;
+
+async function init() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'forge-ai-login.html'; return; }
+    USER = session.user;
+    var roleInfo = await applyNavRole(sb, USER.id || session.user.id, USER.email || session.user.email);
+    var __an = document.getElementById('sb-agency-name'); if(__an) __an.textContent = (USER.user_metadata||session.user.user_metadata||{}).agency_name || (USER.email||session.user.email||'').split('@')[0];
+    if (roleInfo.isTeamMember) { window.location.href = 'forge-ai-dashboard.html'; return; }
+    const user = session.user;
+
+    document.getElementById('auth-check').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    // Set agency name
+    const agencyName = user.user_metadata?.agency_name || 'Your Agency';
+    var __agEl2 = document.getElementById('agency-name') || document.getElementById('sb-agency-name'); if(__agEl2) __agEl2.textContent = agencyName;
+
+    // Load plan
+    const { data: sub } = await sb.from('subscriptions').select('plan,sites_limit,stripe_customer_id,stripe_subscription_id').eq('email', user.email).maybeSingle();
+    const plan = sub?.plan || 'free';
+    const sitesLimit = sub?.sites_limit || 3;
+
+    const planNames = { free:'Free', starter:'Starter', agency:'Agency', enterprise:'Enterprise' };
+    const planPrices = { free:'$0', starter:'$25', agency:'$75', enterprise:'$249' };
+    const planDescs = {
+      free: '3 sites · Basic scanning · Email alerts',
+      starter: '5 sites · Wix & Squarespace · Priority support',
+      agency: '25 sites · All platforms · Auto-maintenance',
+      enterprise: 'Unlimited sites · API access · Priority support'
+    };
+
+    document.getElementById('plan-name').textContent = planNames[plan] || plan;
+    document.getElementById('plan-price').textContent = planPrices[plan] || '$0';
+    document.getElementById('plan-desc').textContent = planDescs[plan] || '';
+    // Show manage subscription for paid plans
+    if (plan !== 'free' && sub && sub.stripe_customer_id) {
+      var manageRow = document.getElementById('manage-sub-row');
+      if (manageRow) manageRow.style.display = 'block';
+    }
+
+    // Plan badge
+    const badge = document.getElementById('sb-plan-badge');
+    if (badge) { badge.textContent = planNames[plan] || 'Free'; }
+
+    // Hide upgrade card for enterprise
+    if (plan === 'enterprise') {
+      const upgradeCard = document.getElementById('upgrade-card');
+      if (upgradeCard) upgradeCard.style.display = 'none';
+    }
+
+    // Load usage stats
+    const { data: sites } = await sb.from('user_sites').select('scan_count').eq('user_id', user.id);
+    const sitesUsed = sites ? sites.length : 0;
+    const totalScans = sites ? sites.reduce((a, s) => a + (s.scan_count || 0), 0) : 0;
+
+    document.getElementById('sites-used').textContent = sitesUsed;
+    document.getElementById('sites-limit').textContent = sitesLimit === 999 ? '∞' : sitesLimit;
+    document.getElementById('total-scans').textContent = totalScans;
+
+    
+    document.getElementById('billing-loading').style.display = 'none';
+    document.getElementById('billing-content').style.display = 'block';
+
+  } catch(e) { console.error('Error:', e.message); }
+}
+
+
+
+init();
+
+// ── SHARED ROLE & PLAN CHECK ─────────────────────────────
+
+
+
+
+
+
+async function applyNavRole(sb, userId, userEmail) {
+  try {
+    var hide = function(id) { var el=document.getElementById(id); if(el) el.style.display='none'; };
+    var show = function(id) { var el=document.getElementById(id); if(el) el.style.display='flex'; };
+    var memberRes = await sb.from('team_members').select('role,agency_id').eq('user_id',userId).eq('status','active').maybeSingle();
+    var member = memberRes.data;
+    var planBadge = document.getElementById('sb-plan-badge');
+    var agencyEl = document.getElementById('sb-agency-name');
+    if (member) {
+      hide('team-nav'); hide('billing-nav'); hide('settings-nav'); hide('connections-nav');
+      if (member.role !== 'developer') show('connections-nav');
+      if (planBadge) { planBadge.textContent = member.role.charAt(0).toUpperCase()+member.role.slice(1); planBadge.style.background='rgba(34,201,122,0.1)'; planBadge.style.color='#22c97a'; }
+      if (agencyEl) agencyEl.textContent = 'Team Member';
+      return { isTeamMember: true, role: member.role };
+    } else {
+      show('team-nav');
+      var subRes = await sb.from('subscriptions').select('plan,sites_limit').eq('email',userEmail).maybeSingle();
+      var sub = subRes.data;
+      var plan = (sub && sub.plan) ? sub.plan : 'free';
+      var planNames = { free:'Free', starter:'Starter', agency:'Agency', enterprise:'Enterprise' };
+      var planColors = { free:{bg:'rgba(107,107,120,0.15)',color:'#70708a'}, starter:{bg:'rgba(77,159,255,0.12)',color:'#4d9fff'}, agency:{bg:'rgba(34,201,122,0.12)',color:'#22c97a'}, enterprise:{bg:'rgba(255,136,63,0.12)',color:'#FF883F'} };
+      if (planBadge) { planBadge.textContent=planNames[plan]||'Free'; var c=planColors[plan]||planColors.free; planBadge.style.background=c.bg; planBadge.style.color=c.color; }
+      if (agencyEl) agencyEl.textContent = userEmail.split('@')[0];
+      if (plan === 'free') { hide('connections-nav'); hide('team-nav'); hide('alerts-nav'); }
+      else { show('connections-nav'); show('team-nav'); show('alerts-nav'); }
+      return { isTeamMember: false, role: 'owner', plan: plan };
+    }
+  } catch(e) { return { isTeamMember: false, role: 'owner' }; }
+}
+async function doSignOut() {
+  await sb.auth.signOut();
+  window.location.href = 'forge-ai-login.html';
+}
+  async function openCustomerPortal() {
+    var btn = document.querySelector('[onclick="openCustomerPortal()"]');
+    if (btn) { btn.textContent = '\u23f3 Opening...'; btn.disabled = true; }
+    try {
+      var sess = await sb.auth.getSession();
+      var session = sess.data.session;
+      if (!session) throw new Error('Not logged in');
+      var res = await fetch('/api/customer-portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token }
+      });
+      var data = await res.json();
+      if (!data.success || !data.url) throw new Error(data.error || 'Could not open portal');
+      window.location.href = data.url;
+    } catch(e) {
+      if (btn) { btn.textContent = '\u2699 Manage Subscription'; btn.disabled = false; }
+      alert('Error: ' + e.message);
+    }
+  }
+
+</script>
+
+
+</body>
+</html>
