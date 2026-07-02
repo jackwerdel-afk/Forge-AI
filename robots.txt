@@ -1,0 +1,27 @@
+User-agent: *
+Disallow: /forge-ai-dashboard.html
+Disallow: /forge-ai-signup.html
+Disallow: /forge-ai-login.html
+Disallow: /forge-ai-settings.html
+Disallow: /forge-ai-billing.html
+Disallow: /forge-ai-report.html
+Disallow: /forge-ai-team.html
+Disallow: /forge-ai-agent.html
+Disallow: /forge-ai-alerts.html
+Disallow: /forge-ai-wix.html
+Disallow: /forge-ai-squarespace.html
+Disallow: /forge-ai-wordpress.html
+Disallow: /forge-ai-webflow.html
+Disallow: /forge-ai-client.html
+Disallow: /forge-ai-terms.html
+Disallow: /forge-ai-privacy.html
+Disallow: /forge-ai-welcome.html
+Disallow: /forge-ai-reset-password.html
+Disallow: /forge-ai-accept-invite.html
+Disallow: /api/
+Disallow: /forge-ai-pricing.html
+
+Allow: /
+Allow: /index.html
+
+Sitemap: https://forgeai-wgs.com/sitemap.xml
