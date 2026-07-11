@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Website Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070f;--surface:#0e0e1a;--surface2:#141422;--surface3:#1a1a2a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --text:#f0f0f8;--text2:#a0a0b8;--muted:#60607a;--muted2:#40405a;
+  --accent:#FF883F;--green:#22c97a;--yellow:#f5a623;--red:#ff4d4d;--blue:#4d9fff;
+  --font:'Inter',-apple-system,sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* Loading */
+#loading{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px}
+.loading-ring{width:44px;height:44px;border:2px solid rgba(255,136,63,0.15);border-top-color:var(--accent);border-radius:50%;animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--muted)}
+
+/* Error */
+#error-screen{display:none;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:10px;padding:24px;text-align:center}
+
+/* App */
+#app{display:none;min-height:100vh;opacity:0;animation:fadeIn 0.5s ease 0.1s forwards}
+@keyframes fadeIn{to{opacity:1}}
+
+/* Header */
+.cp-header{
+  background:rgba(14,14,26,0.95);border-bottom:1px solid var(--border);
+  padding:14px 24px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);
+}
+.cp-brand{display:flex;align-items:center;gap:10px}
+.cp-logo{width:26px;height:26px;object-fit:contain;border-radius:6px}
+.cp-brand-name{font-size:13px;font-weight:700;color:var(--text)}
+.cp-brand-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.cp-contact-btn{
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text2);padding:7px 14px;border-radius:8px;
+  font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);
+  transition:all 0.2s;display:flex;align-items:center;gap:6px;
+}
+.cp-contact-btn:hover{background:var(--surface3);border-color:var(--accent);color:var(--accent)}
+
+/* Hero */
+.cp-hero{
+  padding:52px 24px 44px;
+  background:linear-gradient(180deg,var(--surface) 0%,var(--bg) 100%);
+  border-bottom:1px solid var(--border);
+  text-align:center;
+}
+.cp-greeting{font-size:13px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
+.cp-site-name{font-size:36px;font-weight:900;letter-spacing:-0.03em;margin-bottom:6px}
+.cp-site-url{font-size:13px;color:var(--muted);margin-bottom:40px}
+
+/* Score Ring */
+.cp-score-wrap{display:flex;flex-direction:column;align-items:center;gap:20px;margin-bottom:32px}
+.cp-ring-container{position:relative;width:160px;height:160px;flex-shrink:0}
+.cp-ring-svg{width:160px;height:160px;transform:rotate(-90deg)}
+.cp-ring-track{fill:none;stroke:var(--surface3);stroke-width:10}
+.cp-ring-fill{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)}
+.cp-ring-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cp-ring-number{font-size:42px;font-weight:900;letter-spacing:-0.04em;line-height:1}
+.cp-ring-denom{font-size:13px;color:var(--muted);margin-top:2px}
+.cp-score-text{text-align:center}
+.cp-score-status{font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-bottom:8px}
+.cp-score-desc{font-size:14px;color:var(--text2);line-height:1.7;max-width:380px;margin:0 auto}
+
+/* Status Pills */
+.cp-status-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:8px}
+.cp-pill{
+  display:flex;align-items:center;gap:6px;padding:6px 14px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:20px;
+  font-size:12px;font-weight:500;color:var(--text2);
+}
+.cp-pill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cp-pill-dot.green{background:var(--green)}
+.cp-pill-dot.yellow{background:var(--yellow)}
+.cp-pill-dot.red{background:var(--red)}
+
+/* Main */
+.cp-main{max-width:680px;margin:0 auto;padding:40px 24px}
+.cp-section{margin-bottom:40px}
+.cp-section-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px}
+
+/* Health Cards */
+.cp-health-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.cp-health-grid{grid-template-columns:1fr}}
+.cp-health-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:18px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:border-color 0.2s;
+}
+.cp-health-card:hover{border-color:var(--border2)}
+.cp-health-left{}
+.cp-health-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.cp-health-status{font-size:12px;font-weight:600}
+.cp-health-status.excellent{color:var(--green)}
+.cp-health-status.good{color:var(--green)}
+.cp-health-status.fair{color:var(--yellow)}
+.cp-health-status.poor{color:var(--red)}
+.cp-health-bar{width:60px;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;margin-top:6px}
+.cp-health-bar-fill{height:100%;border-radius:2px;transition:width 1s cubic-bezier(0.4,0,0.2,1)}
+.cp-health-icon{font-size:22px;opacity:0.9}
+
+/* Activity Timeline */
+.cp-timeline{}
+.cp-day-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;margin-top:20px}
+.cp-day-label:first-child{margin-top:0}
+.cp-activity-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:12px 16px;background:var(--surface);
+  border:1px solid var(--border);border-radius:12px;margin-bottom:6px;
+}
+.cp-activity-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.cp-activity-text{font-size:13px;color:var(--text2);line-height:1.5}
+.cp-activity-text strong{color:var(--text);font-weight:600}
+
+/* Tesseract */
+.cp-tesseract{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;
+}
+.cp-tesseract-header{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.cp-tesseract-icon{font-size:18px}
+.cp-tesseract-title{font-size:14px;font-weight:700;color:var(--text)}
+.cp-tesseract-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.cp-tesseract-messages{min-height:120px;max-height:320px;overflow-y:auto;padding:20px}
+.cp-tesseract-suggestions{display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 16px}
+.cp-suggestion{
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:20px;padding:7px 14px;font-size:12px;color:var(--text2);
+  cursor:pointer;transition:all 0.15s;font-family:var(--font);
+}
+.cp-suggestion:hover{border-color:var(--accent);color:var(--accent)}
+.cp-tesseract-input-wrap{
+  display:flex;gap:8px;padding:12px 16px;
+  border-top:1px solid var(--border);background:var(--surface2);
+}
+.cp-tesseract-input{
+  flex:1;background:var(--surface);border:1px solid var(--border2);
+  border-radius:10px;padding:10px 14px;font-size:13px;
+  color:var(--text);font-family:var(--font);outline:none;
+  transition:border-color 0.2s;
+}
+.cp-tesseract-input:focus{border-color:var(--accent)}
+.cp-tesseract-send{
+  background:var(--accent);color:#fff;border:none;
+  border-radius:10px;width:38px;height:38px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;flex-shrink:0;
+  transition:all 0.15s;
+}
+.cp-tesseract-send:hover{opacity:0.9;transform:scale(1.05)}
+.cp-msg{margin-bottom:12px;animation:msgIn 0.2s ease-out}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.cp-msg-user{text-align:right}
+.cp-msg-user .cp-msg-bubble{background:var(--accent);color:#fff;display:inline-block;padding:10px 14px;border-radius:16px 16px 4px 16px;font-size:13px;max-width:85%;text-align:left;line-height:1.6}
+.cp-msg-ai .cp-msg-bubble{background:var(--surface2);border:1px solid var(--border2);color:var(--text);display:inline-block;padding:10px 14px;border-radius:16px 16px 16px 4px;font-size:13px;max-width:85%;line-height:1.6}
+.cp-msg-typing .cp-msg-bubble{background:var(--surface2);border:1px solid var(--border2);display:inline-block;padding:12px 16px;border-radius:16px}
+.cp-dots{display:flex;gap:4px;align-items:center}
+.cp-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:dotPulse 1.4s infinite}
+.cp-dot:nth-child(2){animation-delay:0.2s}
+.cp-dot:nth-child(3){animation-delay:0.4s}
+@keyframes dotPulse{0%,80%,100%{opacity:0.3;transform:scale(0.8)}40%{opacity:1;transform:scale(1)}}
+
+/* Contact Modal */
+#contact-modal{
+  display:none;position:fixed;inset:0;z-index:9999;
+  align-items:center;justify-content:center;
+}
+#contact-backdrop{
+  position:absolute;inset:0;background:rgba(0,0,0,0);
+  backdrop-filter:blur(0px);transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+#contact-sheet{
+  position:relative;background:var(--surface);
+  border:1px solid var(--border2);border-radius:20px;
+  padding:32px;width:90%;max-width:380px;
+  transform:scale(0.9) translateY(20px);opacity:0;
+  transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 24px 60px rgba(0,0,0,0.6);
+}
+#contact-sheet.open{transform:scale(1) translateY(0);opacity:1}
+.contact-close{
+  position:absolute;top:16px;right:16px;
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--muted);cursor:pointer;width:28px;height:28px;
+  border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;
+}
+.contact-close:hover{background:var(--surface3);color:var(--text)}
+.contact-modal-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;letter-spacing:-0.02em}
+.contact-modal-sub{font-size:13px;color:var(--muted2);margin-bottom:24px}
+.contact-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.contact-item:last-child{border-bottom:none}
+.contact-item-icon{font-size:18px;flex-shrink:0;width:32px;text-align:center}
+.contact-item-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px}
+.contact-item-value{font-size:13px;color:var(--text2);font-weight:500}
+.contact-item-value a{color:var(--accent);text-decoration:none}
+.contact-item-value a:hover{text-decoration:underline}
+
+/* Footer */
+.cp-footer{text-align:center;padding:32px 24px;border-top:1px solid var(--border)}
+.cp-powered{font-size:11px;color:var(--muted2)}
+.cp-powered a{color:var(--muted);text-decoration:none}
+.cp-powered a:hover{color:var(--text2)}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loading-ring"></div>
+  <div class="loading-text">Loading your dashboard...</div>
+</div>
+
+<div id="error-screen">
+  <div style="font-size:36px;margin-bottom:12px;opacity:0.4">⚠</div>
+  <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px">Dashboard not found</div>
+  <div style="font-size:13px;color:var(--muted);max-width:320px;line-height:1.7;text-align:center">This link may have expired or is invalid. Please contact your agency for an updated link.</div>
+</div>
+
+<!-- Contact Modal -->
+<div id="contact-modal" onclick="if(event.target===this)closeContact()">
+  <div id="contact-backdrop"></div>
+  <div id="contact-sheet">
+    <button class="contact-close" onclick="closeContact()">×</button>
+    <div class="contact-modal-title">Get in Touch</div>
+    <div class="contact-modal-sub" id="contact-agency-name">Your Agency</div>
+    <div id="contact-items"></div>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- Header -->
+  <header class="cp-header">
+    <div class="cp-brand">
+      <img class="cp-logo" id="agency-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23FF883F'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='16' font-family='Arial' font-weight='bold' fill='white'%3EF%3C/text%3E%3C/svg%3E" alt="">
+      <div>
+        <div class="cp-brand-name" id="agency-name-header">Your Agency</div>
+        <div class="cp-brand-sub">Website Dashboard</div>
+      </div>
+    </div>
+    <button class="cp-contact-btn" onclick="openContact()">
+      <span>📞</span> Contact Us
+    </button>
+  </header>
+
+  <!-- Hero -->
+  <div class="cp-hero">
+    <div class="cp-greeting" id="cp-greeting">Good morning</div>
+    <div class="cp-site-name" id="cp-site-name">Your Website</div>
+    <div class="cp-site-url" id="cp-site-url"></div>
+
+    <div class="cp-score-wrap">
+      <div class="cp-ring-container">
+        <svg class="cp-ring-svg" viewBox="0 0 160 160">
+          <circle class="cp-ring-track" cx="80" cy="80" r="68"/>
+          <circle class="cp-ring-fill" id="cp-ring-fill" cx="80" cy="80" r="68"
+            stroke-dasharray="427" stroke-dashoffset="427"/>
+        </svg>
+        <div class="cp-ring-inner">
+          <div class="cp-ring-number" id="cp-score-number">—</div>
+          <div class="cp-ring-denom">/100</div>
+        </div>
+      </div>
+      <div class="cp-score-text">
+        <div class="cp-score-status" id="cp-score-status">Loading...</div>
+        <div class="cp-score-desc" id="cp-score-desc"></div>
+      </div>
+    </div>
+
+    <div class="cp-status-pills">
+      <div class="cp-pill"><div class="cp-pill-dot green"></div>Website Online</div>
+      <div class="cp-pill"><div class="cp-pill-dot green"></div>SSL Protected</div>
+      <div class="cp-pill" id="cp-monitoring-pill"><div class="cp-pill-dot green"></div>Monitoring Active</div>
+      <div class="cp-pill" id="cp-scan-pill"><div class="cp-pill-dot green"></div><span id="cp-last-scan-text">Recently Scanned</span></div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="cp-main">
+
+    <!-- Website Health -->
+    <div class="cp-section">
+      <div class="cp-section-label">Website Health</div>
+      <div class="cp-health-grid" id="cp-health-grid"></div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="cp-section" id="cp-activity-section" style="display:none">
+      <div class="cp-section-label">Recent Activity</div>
+      <div class="cp-timeline" id="cp-timeline"></div>
+    </div>
+
+    <!-- Ask About Your Website -->
+    <div class="cp-section">
+      <div class="cp-section-label">Ask About Your Website</div>
+      <div class="cp-tesseract">
+        <div class="cp-tesseract-header">
+          <div class="cp-tesseract-icon">⬡</div>
+          <div>
+            <div class="cp-tesseract-title">Website Assistant</div>
+            <div class="cp-tesseract-sub">Ask anything about your website in plain English</div>
+          </div>
+        </div>
+        <div class="cp-tesseract-messages" id="cp-messages">
+          <div class="cp-msg cp-msg-ai">
+            <div class="cp-msg-bubble" id="cp-welcome-msg">Hi! I'm your website assistant. Ask me anything about how your website is doing.</div>
+          </div>
+        </div>
+        <div class="cp-tesseract-suggestions" id="cp-suggestions">
+          <button class="cp-suggestion" onclick="askQuestion(this.textContent)">How is my website doing?</button>
+          <button class="cp-suggestion" onclick="askQuestion(this.textContent)">Is everything okay?</button>
+          <button class="cp-suggestion" onclick="askQuestion(this.textContent)">Has anything changed recently?</button>
+          <button class="cp-suggestion" onclick="askQuestion(this.textContent)">Is my website being monitored?</button>
+        </div>
+        <div class="cp-tesseract-input-wrap">
+          <input class="cp-tesseract-input" id="cp-input" placeholder="Ask about your website..." onkeydown="if(event.key==='Enter')sendMessage()">
+          <button class="cp-tesseract-send" onclick="sendMessage()">↑</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="cp-footer">
+    <div class="cp-powered">Monitored by <a href="https://forgeai-wgs.com" target="_blank">Forge AI</a></div>
+  </footer>
+
+</div>
+
+<script>
+(function() {
+
+var PORTAL_DATA = null;
+var CHAT_HISTORY = [];
+
+// Greeting
+var hour = new Date().getHours();
+var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+document.getElementById('cp-greeting').textContent = greeting;
+
+var params = new URLSearchParams(window.location.search);
+var token = params.get('token');
+if (!token) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error-screen').style.display = 'flex';
+  return;
+}
+
+function scoreColor(s) { return s >= 80 ? 'var(--green)' : s >= 60 ? 'var(--yellow)' : 'var(--red)'; }
+function scoreRingColor(s) { return s >= 80 ? '#22c97a' : s >= 60 ? '#f5a623' : '#ff4d4d'; }
+function healthLabel(s, max) {
+  var pct = s / max * 100;
+  if (pct >= 85) return { text: 'Excellent', cls: 'excellent' };
+  if (pct >= 70) return { text: 'Good', cls: 'good' };
+  if (pct >= 50) return { text: 'Fair', cls: 'fair' };
+  return { text: 'Needs Work', cls: 'poor' };
+}
+function scoreStatus(s) {
+  if (s >= 90) return { status: 'Excellent', desc: 'Your website is in top shape. Everything is running smoothly.' };
+  if (s >= 80) return { status: 'Good', desc: 'Your website is in great shape with just a few small things to keep an eye on.' };
+  if (s >= 70) return { status: 'Looking Good', desc: 'Your website is doing well. Your agency is working on some improvements.' };
+  if (s >= 60) return { status: 'Being Monitored', desc: 'Your agency has spotted some areas to improve and is keeping an eye on things.' };
+  return { status: 'Needs Attention', desc: 'Your agency is actively working on improving your website.' };
+}
+function timeAgo(date) {
+  var d = new Date(date);
+  var now = new Date();
+  var diff = Math.floor((now - d) / 1000);
+  if (diff < 3600) return Math.floor(diff/60) + ' minutes ago';
+  if (diff < 86400) return Math.floor(diff/3600) + ' hours ago';
+  if (diff < 172800) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+fetch('/api/client-portal?token=' + encodeURIComponent(token))
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    document.getElementById('loading').style.display = 'none';
+    if (!data.success || !data.portal) {
+      document.getElementById('error-screen').style.display = 'flex';
+      return;
+    }
+
+    var p = data.portal;
+    PORTAL_DATA = p;
+    document.getElementById('app').style.display = 'block';
+    document.title = (p.siteName || 'Your Website') + ' — Dashboard';
+
+    // Header
+    document.getElementById('agency-name-header').textContent = p.agencyName || 'Your Agency';
+
+    // Hero
+    document.getElementById('cp-site-name').textContent = p.siteName || p.siteUrl;
+    document.getElementById('cp-site-url').textContent = p.siteUrl || '';
+
+    // Score ring
+    var score = p.score;
+    if (score !== null && score !== undefined) {
+      var numEl = document.getElementById('cp-score-number');
+      numEl.textContent = score;
+      numEl.style.color = scoreColor(score);
+
+      var ring = document.getElementById('cp-ring-fill');
+      ring.style.stroke = scoreRingColor(score);
+      var circumference = 427;
+      setTimeout(function() {
+        ring.style.strokeDashoffset = circumference - (score / 100 * circumference);
+      }, 300);
+
+      var ss = scoreStatus(score);
+      document.getElementById('cp-score-status').textContent = ss.status;
+      document.getElementById('cp-score-status').style.color = scoreColor(score);
+      document.getElementById('cp-score-desc').textContent = ss.desc;
+    }
+
+    // Last scan pill
+    if (p.lastScan) {
+      document.getElementById('cp-last-scan-text').textContent = 'Scanned ' + timeAgo(p.lastScan);
+    }
+
+    // Health grid
+    var grid = document.getElementById('cp-health-grid');
+    var healthMap = {
+      seo: { name: 'Search Visibility', icon: '🔍' },
+      performance: { name: 'Loading Speed', icon: '⚡' },
+      mobile: { name: 'Mobile Experience', icon: '📱' },
+      ux: { name: 'Ease of Use', icon: '✨' },
+      maintenance: { name: 'Maintenance', icon: '🛡️' }
+    };
+    if (p.lastResult && p.lastResult.modules) {
+      Object.entries(p.lastResult.modules).forEach(function(entry) {
+        var key = entry[0], mod = entry[1];
+        if (!mod || mod.score === undefined) return;
+        var info = healthMap[key] || { name: key, icon: '📊' };
+        var hl = healthLabel(mod.score, 20);
+        var pct = (mod.score / 20 * 100);
+        var fillColor = hl.cls === 'excellent' || hl.cls === 'good' ? 'var(--green)' : hl.cls === 'fair' ? 'var(--yellow)' : 'var(--red)';
+        var card = document.createElement('div');
+        card.className = 'cp-health-card';
+        card.innerHTML =
+          '<div class="cp-health-left">' +
+            '<div class="cp-health-name">' + info.name + '</div>' +
+            '<div class="cp-health-status ' + hl.cls + '">' + hl.text + '</div>' +
+            '<div class="cp-health-bar"><div class="cp-health-bar-fill" style="width:0%;background:' + fillColor + '" data-w="' + pct + '"></div></div>' +
+          '</div>' +
+          '<div class="cp-health-icon">' + info.icon + '</div>';
+        grid.appendChild(card);
+      });
+      setTimeout(function() {
+        grid.querySelectorAll('.cp-health-bar-fill').forEach(function(el) {
+          el.style.width = el.getAttribute('data-w') + '%';
+        });
+      }, 400);
+    }
+
+    // Activity timeline
+    if (p.scoreHistory && p.scoreHistory.length > 0) {
+      document.getElementById('cp-activity-section').style.display = 'block';
+      var timeline = document.getElementById('cp-timeline');
+      var history = p.scoreHistory.slice().reverse().slice(0, 5);
+      var lastDayLabel = null;
+
+      history.forEach(function(h, i) {
+        var s = h.score !== undefined ? h.score : h;
+        var prev = i < history.length - 1 ? (history[i+1].score !== undefined ? history[i+1].score : history[i+1]) : s;
+        var diff = s - prev;
+        var date = h.date ? new Date(h.date) : new Date();
+        var today = new Date().toDateString();
+        var yesterday = new Date(Date.now() - 86400000).toDateString();
+        var dayLabel = date.toDateString() === today ? 'Today' : date.toDateString() === yesterday ? 'Yesterday' : date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+        if (dayLabel !== lastDayLabel) {
+          lastDayLabel = dayLabel;
+          var lbl = document.createElement('div');
+          lbl.className = 'cp-day-label';
+          lbl.textContent = dayLabel;
+          timeline.appendChild(lbl);
+        }
+
+        var icon = i === 0 ? '✓' : diff > 2 ? '📈' : diff < -2 ? '📉' : '✓';
+        var text = i === 0
+          ? '<strong>Website scanned successfully.</strong> Score: ' + s + '/100'
+          : diff > 2 ? '<strong>Website health improved</strong> by ' + diff + ' points to ' + s + '/100'
+          : diff < -2 ? '<strong>Agency monitoring a score change</strong> — now at ' + s + '/100'
+          : '<strong>Website remained healthy.</strong> Score: ' + s + '/100';
+
+        var item = document.createElement('div');
+        item.className = 'cp-activity-item';
+        item.innerHTML = '<div class="cp-activity-icon">' + icon + '</div><div class="cp-activity-text">' + text + '</div>';
+        timeline.appendChild(item);
+      });
+    }
+
+    // Contact modal setup
+    setupContact(p);
+
+    // Welcome message with site context
+    var welcomeScore = score ? ' Your website is currently scoring ' + score + '/100.' : '';
+    document.getElementById('cp-welcome-msg').textContent = 'Hi! I\'m your website assistant.' + welcomeScore + ' Ask me anything about how your website is doing.';
+
+  })
+  .catch(function() {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-screen').style.display = 'flex';
+  });
+
+// ── CONTACT MODAL ──────────────────────────────────────────
+function setupContact(p) {
+  document.getElementById('contact-agency-name').textContent = p.agencyName || 'Your Agency';
+  var items = document.getElementById('contact-items');
+  var html = '';
+  if (p.agencyEmail) {
+    html += '<div class="contact-item"><div class="contact-item-icon">✉️</div><div><div class="contact-item-label">Email</div><div class="contact-item-value"><a href="mailto:' + p.agencyEmail + '">' + p.agencyEmail + '</a></div></div></div>';
+  }
+  if (p.agencyPhone) {
+    html += '<div class="contact-item"><div class="contact-item-icon">📞</div><div><div class="contact-item-label">Phone</div><div class="contact-item-value"><a href="tel:' + p.agencyPhone + '">' + p.agencyPhone + '</a></div></div></div>';
+  }
+  if (p.agencyWebsite) {
+    html += '<div class="contact-item"><div class="contact-item-icon">🌐</div><div><div class="contact-item-label">Website</div><div class="contact-item-value"><a href="' + p.agencyWebsite + '" target="_blank">' + p.agencyWebsite.replace(/^https?:\/\//, '') + '</a></div></div></div>';
+  }
+  if (!html) {
+    html = '<div style="padding:20px 0;text-align:center;color:var(--muted);font-size:13px">Contact details coming soon.</div>';
+  }
+  items.innerHTML = html;
+}
+
+function openContact() {
+  var modal = document.getElementById('contact-modal');
+  var sheet = document.getElementById('contact-sheet');
+  var backdrop = document.getElementById('contact-backdrop');
+  modal.style.display = 'flex';
+  setTimeout(function() {
+    backdrop.style.background = 'rgba(0,0,0,0.6)';
+    backdrop.style.backdropFilter = 'blur(4px)';
+    sheet.classList.add('open');
+  }, 10);
+  document.addEventListener('keydown', handleContactEsc);
+}
+
+function closeContact() {
+  var sheet = document.getElementById('contact-sheet');
+  var backdrop = document.getElementById('contact-backdrop');
+  var modal = document.getElementById('contact-modal');
+  sheet.classList.remove('open');
+  backdrop.style.background = 'rgba(0,0,0,0)';
+  backdrop.style.backdropFilter = 'blur(0px)';
+  setTimeout(function() { modal.style.display = 'none'; }, 350);
+  document.removeEventListener('keydown', handleContactEsc);
+}
+
+function handleContactEsc(e) { if (e.key === 'Escape') closeContact(); }
+
+// ── TESSERACT CLIENT CHAT ──────────────────────────────────
+function addMessage(role, text) {
+  var messages = document.getElementById('cp-messages');
+  var div = document.createElement('div');
+  div.className = 'cp-msg cp-msg-' + (role === 'user' ? 'user' : 'ai');
+  div.innerHTML = '<div class="cp-msg-bubble">' + text + '</div>';
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function showTyping() {
+  var messages = document.getElementById('cp-messages');
+  var div = document.createElement('div');
+  div.className = 'cp-msg cp-msg-typing';
+  div.id = 'cp-typing';
+  div.innerHTML = '<div class="cp-msg-bubble"><div class="cp-dots"><div class="cp-dot"></div><div class="cp-dot"></div><div class="cp-dot"></div></div></div>';
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function removeTyping() {
+  var el = document.getElementById('cp-typing');
+  if (el) el.remove();
+}
+
+function askQuestion(q) {
+  document.getElementById('cp-suggestions').style.display = 'none';
+  document.getElementById('cp-input').value = q;
+  sendMessage();
+}
+
+async function sendMessage() {
+  var input = document.getElementById('cp-input');
+  var msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  document.getElementById('cp-suggestions').style.display = 'none';
+
+  addMessage('user', msg);
+  CHAT_HISTORY.push({ role: 'user', content: msg });
+  showTyping();
+
+  try {
+    var p = PORTAL_DATA || {};
+    var score = p.score || 'unknown';
+    var siteName = p.siteName || p.siteUrl || 'your website';
+    var agencyName = p.agencyName || 'your agency';
+    var lastScan = p.lastScan ? new Date(p.lastScan).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'recently';
+
+    var systemPrompt = 'You are a friendly website assistant for a small business owner. You speak in simple, plain English — no technical jargon whatsoever. ' +
+      'The client\'s website is "' + siteName + '" and it is currently scoring ' + score + '/100. ' +
+      'It was last scanned on ' + lastScan + '. ' +
+      'It is managed by ' + agencyName + ' who monitors it daily. ' +
+      'Your job is to reassure the client, answer their questions simply, and make them feel confident their website is being taken care of. ' +
+      'Never mention technical terms like SEO, LCP, CLS, H1, meta tags, etc. ' +
+      'Instead say things like "search visibility", "loading speed", "how it looks on phones", etc. ' +
+      'Keep answers short, warm, and reassuring. 2-4 sentences maximum.';
+
+    var messages = [{ role: 'user', content: msg }];
+    if (CHAT_HISTORY.length > 2) {
+      messages = CHAT_HISTORY.slice(-4);
+    }
+
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: messages
+      })
+    });
+
+    var data = await res.json();
+    removeTyping();
+    var reply = data.content && data.content[0] && data.content[0].text ? data.content[0].text : 'I\'m here to help! Please try asking again.';
+    addMessage('ai', reply);
+    CHAT_HISTORY.push({ role: 'assistant', content: reply });
+
+  } catch(e) {
+    removeTyping();
+    addMessage('ai', 'I\'m having a moment — please try again in a second!');
+  }
+}
+
+})();
+</script>
+</body>
+</html>
