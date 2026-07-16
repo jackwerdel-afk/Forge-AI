@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI — Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070f;--surface:#0e0e1a;--surface2:#141422;--surface3:#1a1a2a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --text:#f0f0f8;--text2:#a0a0b8;--muted:#60607a;--muted2:#40405a;
+  --accent:#FF883F;--accent2:#e6732e;--green:#22c97a;--yellow:#f5a623;--red:#ff4d4d;--blue:#4d9fff;
+  --font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;-webkit-font-smoothing:antialiased}
+
+/* Sidebar */
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border)}
+.sidebar-logo img{width:32px;height:32px}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;text-decoration:none;transition:all 0.15s;border-radius:0;position:relative}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.04)}
+.nav-item.active{color:var(--accent);background:rgba(255,136,63,0.08)}
+.nav-item-icon{width:18px;text-align:center;font-size:14px;flex-shrink:0}
+.sidebar-agency{padding:14px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.sidebar-agency-name{font-size:13px;font-weight:700;color:var(--text);margin-top:2px}
+.sidebar-plan{display:inline-block;background:rgba(255,136,63,0.15);color:var(--accent);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em}
+.sign-out{display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:12px;color:var(--muted);cursor:pointer;text-decoration:none;transition:color 0.15s;border-top:1px solid var(--border)}
+.sign-out:hover{color:var(--text2)}
+
+/* Main */
+.main{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+
+/* Top bar */
+.topbar{padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);position:sticky;top:0;z-index:50;gap:16px}
+.topbar-title{font-size:20px;font-weight:800;letter-spacing:-0.03em}
+.topbar-sub{font-size:13px;color:var(--muted2);margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.range-btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all 0.15s}
+.range-btn.active,.range-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Content */
+.content{padding:28px;display:flex;flex-direction:column;gap:24px}
+
+/* Stat cards */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:border-color 0.2s}
+.stat-card:hover{border-color:var(--border2)}
+.stat-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+.stat-value{font-size:32px;font-weight:900;letter-spacing:-0.04em;line-height:1}
+.stat-sub{font-size:12px;color:var(--muted2);margin-top:6px;display:flex;align-items:center;gap:4px}
+.stat-trend-up{color:var(--green)}
+.stat-trend-down{color:var(--red)}
+
+/* Section */
+.section{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.section-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.section-title{font-size:13px;font-weight:700;color:var(--text)}
+.section-sub{font-size:11px;color:var(--muted)}
+.section-body{padding:20px}
+
+/* Two col */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+/* Chart container */
+.chart-wrap{position:relative;height:220px}
+
+/* World map placeholder */
+.map-wrap{height:280px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.map-placeholder{text-align:center;color:var(--muted)}
+.map-placeholder-icon{font-size:36px;margin-bottom:8px}
+
+/* Table */
+.analytics-table{width:100%;border-collapse:collapse}
+.analytics-table th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.analytics-table td{padding:10px 12px;font-size:13px;color:var(--text2);border-bottom:1px solid var(--border)}
+.analytics-table tr:last-child td{border-bottom:none}
+.analytics-table tr:hover td{background:rgba(255,255,255,0.02)}
+.analytics-table td:first-child{color:var(--text);font-weight:500}
+.trend-up{color:var(--green);font-weight:700;font-size:12px}
+.trend-down{color:var(--red);font-weight:700;font-size:12px}
+.trend-flat{color:var(--muted);font-weight:700;font-size:12px}
+
+/* Anomaly feed */
+.anomaly-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.anomaly-item:last-child{border-bottom:none}
+.anomaly-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.anomaly-dot.red{background:var(--red)}
+.anomaly-dot.yellow{background:var(--yellow)}
+.anomaly-dot.green{background:var(--green)}
+.anomaly-dot.blue{background:var(--blue)}
+.anomaly-text{font-size:13px;color:var(--text2);line-height:1.5}
+.anomaly-text strong{color:var(--text)}
+.anomaly-time{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* Device bars */
+.device-bar-wrap{display:flex;flex-direction:column;gap:10px}
+.device-bar-row{display:flex;align-items:center;gap:10px}
+.device-bar-label{font-size:12px;color:var(--text2);width:70px;flex-shrink:0}
+.device-bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.device-bar-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(0.4,0,0.2,1)}
+.device-bar-pct{font-size:12px;color:var(--muted);width:36px;text-align:right;flex-shrink:0}
+
+/* Page list */
+.page-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.page-row:last-child{border-bottom:none}
+.page-path{font-size:12px;color:var(--text);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+.page-views{font-size:12px;color:var(--muted2);font-weight:600}
+.page-bar{height:3px;background:var(--accent);border-radius:2px;margin-top:4px;transition:width 1s}
+
+/* Empty state */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:32px;margin-bottom:10px;opacity:0.5}
+.empty-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.empty-desc{font-size:12px;line-height:1.7}
+
+/* Site selector */
+.site-filter{background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:6px 12px;border-radius:8px;font-size:12px;font-family:var(--font);outline:none;cursor:pointer}
+.site-filter:focus{border-color:var(--accent)}
+
+/* Loading */
+.loading-spinner{width:20px;height:20px;border:2px solid rgba(255,136,63,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn 0.4s ease forwards}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar-container"></div>
+
+<!-- Main -->
+<div class="main">
+  <!-- Top bar -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <a href="forge-ai-dashboard.html" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text2);text-decoration:none;font-size:16px;flex-shrink:0;transition:all 0.15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'" title="Back to Dashboard">←</a>
+      <div>
+        <div class="topbar-title">Analytics</div>
+        <div class="topbar-sub" id="topbar-sub">Loading...</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <select class="site-filter" id="site-filter" onchange="loadAnalytics()">
+        <option value="all">All Sites</option>
+      </select>
+      <button class="range-btn active" id="range-7" onclick="setRange(7)">7D</button>
+      <button class="range-btn" id="range-30" onclick="setRange(30)">30D</button>
+      <button class="range-btn" id="range-90" onclick="setRange(90)">90D</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content" id="analytics-content">
+    <div style="text-align:center;padding:60px 0">
+      <div class="loading-spinner"></div>
+      <div style="font-size:13px;color:var(--muted);margin-top:16px">Loading analytics...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+var SUPABASE_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+var sb, USER, SITES = [], RANGE = 7, SELECTED_SITE = 'all';
+var trafficChart = null, deviceChart = null;
+
+function waitForSupabase(cb) {
+  if (typeof supabase !== 'undefined') { cb(); return; }
+  var t = 0, i = setInterval(function() {
+    t++; if (typeof supabase !== 'undefined') { clearInterval(i); cb(); }
+    if (t > 50) clearInterval(i);
+  }, 100);
+}
+
+function buildSidebar() {
+  var container = document.getElementById('sidebar-container');
+  if (!container) return;
+  var navItems = [
+    { href: 'forge-ai-dashboard.html', icon: '⚡', label: 'Dashboard', id: 'dashboard-nav', active: true },
+    { href: 'forge-ai-report.html', icon: '📄', label: 'Reports', id: 'reports-nav' },
+    { href: '#', icon: '🔔', label: 'Alerts', id: 'alerts-nav' },
+    { href: 'forge-ai-connections.html', icon: '🔗', label: 'Connections', id: 'connections-nav' },
+    { href: 'forge-ai-team.html', icon: '👥', label: 'Team', id: 'team-nav' },
+    { href: 'forge-ai-agent.html', icon: '🤖', label: 'Forge Agent', id: 'agent-nav' },
+    { href: 'forge-ai-billing.html', icon: '💳', label: 'Billing', id: 'billing-nav' },
+    { href: 'forge-ai-settings.html', icon: '⚙️', label: 'Settings', id: 'settings-nav' },
+  ];
+  var logoHtml = '<div class="sidebar-logo"><img src="https://forgeai-wgs.com/forge-ai-logo.png" onerror="this.style.display=\'none\'" alt="Forge AI"></div>';
+  var navHtml = '<nav class="sidebar-nav">';
+  navItems.forEach(function(item) {
+    var active = item.active ? ' active' : '';
+    navHtml += '<a href="' + item.href + '" class="nav-item' + active + '" id="' + item.id + '">' +
+      '<span class="nav-item-icon">' + item.icon + '</span>' + item.label + '</a>';
+  });
+  navHtml += '</nav>';
+  var agencyHtml = '<div class="sidebar-agency"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Agency</div>' +
+    '<div class="sidebar-agency-name" id="agency-name-sidebar">—</div>' +
+    '<div class="sidebar-plan" id="plan-badge">Free</div></div>' +
+    '<a href="#" class="sign-out" onclick="signOut()">→ Sign out</a>';
+  container.innerHTML = logoHtml + navHtml + agencyHtml;
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  window.location.href = 'forge-ai-login.html';
+}
+
+function setRange(days) {
+  RANGE = days;
+  document.querySelectorAll('.range-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('range-' + days).classList.add('active');
+  loadAnalytics();
+}
+
+function getDateRange() {
+  var end = new Date();
+  var start = new Date();
+  start.setDate(start.getDate() - RANGE);
+  return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+}
+
+async function loadAnalytics() {
+  SELECTED_SITE = document.getElementById('site-filter').value;
+  var { start, end } = getDateRange();
+
+  var content = document.getElementById('analytics-content');
+  content.innerHTML = '<div style="text-align:center;padding:60px 0"><div class="loading-spinner"></div><div style="font-size:13px;color:var(--muted);margin-top:16px">Loading analytics...</div></div>';
+
+  try {
+    // Build query
+    var analyticsQuery = sb.from('site_analytics')
+      .select('*').eq('user_id', USER.id).gte('date', start).lte('date', end).order('date');
+    var pageQuery = sb.from('page_stats')
+      .select('*').eq('user_id', USER.id).gte('date', start).lte('date', end);
+    var viewsQuery = sb.from('page_views')
+      .select('country, city, device, browser, created_at').eq('user_id', USER.id)
+      .gte('created_at', start).lte('created_at', end + 'T23:59:59Z');
+
+    if (SELECTED_SITE !== 'all') {
+      analyticsQuery = analyticsQuery.eq('site_id', SELECTED_SITE);
+      pageQuery = pageQuery.eq('site_id', SELECTED_SITE);
+      viewsQuery = viewsQuery.eq('site_id', SELECTED_SITE);
+    }
+
+    var [analyticsRes, pageRes, viewsRes] = await Promise.all([
+      analyticsQuery, pageQuery, viewsQuery
+    ]);
+
+    var analytics = analyticsRes.data || [];
+    var pages = pageRes.data || [];
+    var views = viewsRes.data || [];
+
+    renderAnalytics(analytics, pages, views);
+
+  } catch(e) {
+    content.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Failed to load analytics</div><div class="empty-desc">' + e.message + '</div></div>';
+  }
+}
+
+function renderAnalytics(analytics, pages, views) {
+  var content = document.getElementById('analytics-content');
+
+  // Aggregate stats
+  var totalViews = analytics.reduce(function(s, d) { return s + (d.page_views || 0); }, 0);
+  var totalVisitors = analytics.reduce(function(s, d) { return s + (d.visitors || 0); }, 0);
+  var avgDuration = analytics.length ? Math.round(analytics.reduce(function(s, d) { return s + (d.avg_duration_seconds || 0); }, 0) / analytics.length) : 0;
+
+  // Compare to previous period for trend
+  var midPoint = Math.floor(analytics.length / 2);
+  var recentViews = analytics.slice(midPoint).reduce(function(s, d) { return s + (d.page_views || 0); }, 0);
+  var oldViews = analytics.slice(0, midPoint).reduce(function(s, d) { return s + (d.page_views || 0); }, 0);
+  var viewsTrend = oldViews > 0 ? Math.round((recentViews - oldViews) / oldViews * 100) : 0;
+
+  // Top pages
+  var pageMap = {};
+  pages.forEach(function(p) {
+    if (!pageMap[p.page]) pageMap[p.page] = { views: 0, duration: 0, entries: 0, exits: 0 };
+    pageMap[p.page].views += p.views || 0;
+    pageMap[p.page].duration += p.avg_duration_seconds || 0;
+    pageMap[p.page].entries += p.entries || 0;
+    pageMap[p.page].exits += p.exits || 0;
+  });
+  var topPages = Object.entries(pageMap).sort(function(a, b) { return b[1].views - a[1].views; }).slice(0, 8);
+  var maxPageViews = topPages.length ? topPages[0][1].views : 1;
+
+  // Device breakdown
+  var devices = { desktop: 0, mobile: 0, tablet: 0 };
+  views.forEach(function(v) { if (devices[v.device] !== undefined) devices[v.device]++; });
+  var totalDevices = devices.desktop + devices.mobile + devices.tablet || 1;
+
+  // Country breakdown
+  var countryMap = {};
+  views.forEach(function(v) {
+    if (v.country && v.country !== 'Unknown') {
+      countryMap[v.country] = (countryMap[v.country] || 0) + 1;
+    }
+  });
+  var topCountries = Object.entries(countryMap).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 6);
+
+  // Browser breakdown
+  var browserMap = {};
+  views.forEach(function(v) {
+    if (v.browser) browserMap[v.browser] = (browserMap[v.browser] || 0) + 1;
+  });
+  var topBrowsers = Object.entries(browserMap).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 5);
+
+  // Traffic trend data
+  var trendLabels = analytics.map(function(d) {
+    var dt = new Date(d.date);
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+  var trendData = analytics.map(function(d) { return d.page_views || 0; });
+  var visitorData = analytics.map(function(d) { return d.visitors || 0; });
+
+  // Format duration
+  function fmtDuration(s) {
+    if (s < 60) return s + 's';
+    return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+  }
+
+  function fmtNum(n) {
+    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+    return String(n);
+  }
+
+  var hasData = totalViews > 0;
+
+  content.innerHTML = '';
+  content.className = 'content fade-in';
+
+  if (!hasData) {
+    content.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div>' +
+      '<div class="empty-title">No analytics data yet</div>' +
+      '<div class="empty-desc">Install the Forge AI WordPress plugin on your client sites to start collecting analytics data automatically.<br><br>For other platforms, add the tracking snippet to your site\'s &lt;head&gt; section.</div></div>';
+    return;
+  }
+
+  // ── STAT CARDS ──────────────────────────────────────────
+  var trendHtml = viewsTrend > 0
+    ? '<span class="stat-trend-up">↑ ' + viewsTrend + '%</span> vs previous period'
+    : viewsTrend < 0
+    ? '<span class="stat-trend-down">↓ ' + Math.abs(viewsTrend) + '%</span> vs previous period'
+    : '→ No change vs previous period';
+
+  var statGrid = document.createElement('div');
+  statGrid.className = 'stat-grid';
+  statGrid.innerHTML = [
+    { label: 'Total Page Views', value: fmtNum(totalViews), sub: trendHtml },
+    { label: 'Unique Visitors', value: fmtNum(totalVisitors), sub: 'Over the last ' + RANGE + ' days' },
+    { label: 'Avg Time on Page', value: fmtDuration(avgDuration), sub: 'Across all pages' },
+    { label: 'Countries Reached', value: String(topCountries.length), sub: topCountries.length ? 'Top: ' + (topCountries[0] ? topCountries[0][0] : '—') : 'No geo data yet' },
+  ].map(function(s) {
+    return '<div class="stat-card"><div class="stat-label">' + s.label + '</div>' +
+      '<div class="stat-value">' + s.value + '</div>' +
+      '<div class="stat-sub">' + s.sub + '</div></div>';
+  }).join('');
+  content.appendChild(statGrid);
+
+  // ── TRAFFIC TREND CHART ──────────────────────────────────
+  var trafficSection = document.createElement('div');
+  trafficSection.className = 'section';
+  trafficSection.innerHTML = '<div class="section-header"><div><div class="section-title">Traffic Trend</div><div class="section-sub">Page views and visitors over time</div></div></div>' +
+    '<div class="section-body"><div class="chart-wrap"><canvas id="traffic-chart"></canvas></div></div>';
+  content.appendChild(trafficSection);
+
+  // ── TWO COL: TOP PAGES + ANOMALIES ───────────────────────
+  var twoCol1 = document.createElement('div');
+  twoCol1.className = 'two-col';
+
+  // Top pages
+  var topPagesHtml = '<div class="section"><div class="section-header"><div class="section-title">Top Pages</div><div class="section-sub">By page views</div></div><div class="section-body">';
+  if (topPages.length === 0) {
+    topPagesHtml += '<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-desc">No page data yet</div></div>';
+  } else {
+    topPages.forEach(function(p) {
+      var pct = Math.round(p[1].views / maxPageViews * 100);
+      topPagesHtml += '<div class="page-row"><div style="flex:1;min-width:0"><div class="page-path">' + (p[0] || '/') + '</div>' +
+        '<div class="page-bar" style="width:' + pct + '%"></div></div>' +
+        '<div class="page-views">' + fmtNum(p[1].views) + '</div></div>';
+    });
+  }
+  topPagesHtml += '</div></div>';
+  twoCol1.innerHTML = topPagesHtml;
+
+  // Anomaly / insights feed
+  var anomalies = generateInsights(analytics, topPages, views);
+  var anomalyHtml = '<div class="section"><div class="section-header"><div class="section-title">Intelligence Feed</div><div class="section-sub">What you should know right now</div></div><div class="section-body">';
+  if (anomalies.length === 0) {
+    anomalyHtml += '<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-desc">Everything looks normal. No anomalies detected.</div></div>';
+  } else {
+    anomalies.forEach(function(a) {
+      anomalyHtml += '<div class="anomaly-item"><div class="anomaly-dot ' + a.color + '"></div>' +
+        '<div><div class="anomaly-text">' + a.text + '</div><div class="anomaly-time">' + a.time + '</div></div></div>';
+    });
+  }
+  anomalyHtml += '</div></div>';
+  twoCol1.innerHTML += anomalyHtml;
+  content.appendChild(twoCol1);
+
+  // ── THREE COL: DEVICES + BROWSERS + COUNTRIES ────────────
+  var threeCol = document.createElement('div');
+  threeCol.className = 'three-col';
+
+  // Device breakdown
+  var deviceHtml = '<div class="section"><div class="section-header"><div class="section-title">Devices</div></div><div class="section-body">' +
+    '<div class="device-bar-wrap">' +
+    [
+      { label: 'Desktop', val: devices.desktop, color: 'var(--accent)' },
+      { label: 'Mobile', val: devices.mobile, color: 'var(--blue)' },
+      { label: 'Tablet', val: devices.tablet, color: 'var(--green)' }
+    ].map(function(d) {
+      var pct = Math.round(d.val / totalDevices * 100);
+      return '<div class="device-bar-row"><div class="device-bar-label">' + d.label + '</div>' +
+        '<div class="device-bar-track"><div class="device-bar-fill" style="width:' + pct + '%;background:' + d.color + '"></div></div>' +
+        '<div class="device-bar-pct">' + pct + '%</div></div>';
+    }).join('') + '</div></div></div>';
+
+  // Browser breakdown
+  var totalBrowsers = topBrowsers.reduce(function(s, b) { return s + b[1]; }, 0) || 1;
+  var browserHtml = '<div class="section"><div class="section-header"><div class="section-title">Browsers</div></div><div class="section-body">' +
+    '<div class="device-bar-wrap">' +
+    topBrowsers.map(function(b) {
+      var pct = Math.round(b[1] / totalBrowsers * 100);
+      return '<div class="device-bar-row"><div class="device-bar-label" style="font-size:11px">' + b[0] + '</div>' +
+        '<div class="device-bar-track"><div class="device-bar-fill" style="width:' + pct + '%;background:var(--blue)"></div></div>' +
+        '<div class="device-bar-pct">' + pct + '%</div></div>';
+    }).join('') + '</div></div></div>';
+
+  // Countries
+  var totalCountryViews = topCountries.reduce(function(s, c) { return s + c[1]; }, 0) || 1;
+  var countryHtml = '<div class="section"><div class="section-header"><div class="section-title">Countries</div></div><div class="section-body">' +
+    '<div class="device-bar-wrap">' +
+    (topCountries.length === 0 ? '<div class="empty-state"><div class="empty-desc">No geo data yet</div></div>' :
+    topCountries.map(function(c) {
+      var pct = Math.round(c[1] / totalCountryViews * 100);
+      return '<div class="device-bar-row"><div class="device-bar-label" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + c[0] + '</div>' +
+        '<div class="device-bar-track"><div class="device-bar-fill" style="width:' + pct + '%;background:var(--green)"></div></div>' +
+        '<div class="device-bar-pct">' + pct + '%</div></div>';
+    }).join('')) + '</div></div></div>';
+
+  threeCol.innerHTML = deviceHtml + browserHtml + countryHtml;
+  content.appendChild(threeCol);
+
+  // ── ENTRY / EXIT PAGES TABLE ─────────────────────────────
+  var entryExitSection = document.createElement('div');
+  entryExitSection.className = 'section';
+  var topEntry = topPages.sort(function(a, b) { return b[1].entries - a[1].entries; }).slice(0, 5);
+  var topExit = [...topPages].sort(function(a, b) { return b[1].exits - a[1].exits; }).slice(0, 5);
+
+  entryExitSection.innerHTML = '<div class="section-header"><div class="section-title">Entry & Exit Pages</div><div class="section-sub">Where visitors start and end their journey</div></div>' +
+    '<div class="section-body"><div class="two-col">' +
+    '<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Top Entry Pages</div>' +
+    topEntry.map(function(p) {
+      return '<div class="page-row"><div class="page-path">' + (p[0] || '/') + '</div><div class="page-views trend-up">↓ ' + fmtNum(p[1].entries) + '</div></div>';
+    }).join('') + '</div>' +
+    '<div><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Top Exit Pages</div>' +
+    topExit.map(function(p) {
+      return '<div class="page-row"><div class="page-path">' + (p[0] || '/') + '</div><div class="page-views trend-down">↑ ' + fmtNum(p[1].exits) + '</div></div>';
+    }).join('') + '</div></div></div>';
+  content.appendChild(entryExitSection);
+
+  // ── RENDER CHARTS ────────────────────────────────────────
+  setTimeout(function() {
+    // Traffic chart
+    var ctx = document.getElementById('traffic-chart');
+    if (ctx) {
+      if (trafficChart) trafficChart.destroy();
+      trafficChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: trendLabels,
+          datasets: [
+            {
+              label: 'Page Views',
+              data: trendData,
+              borderColor: '#FF883F',
+              backgroundColor: 'rgba(255,136,63,0.08)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 3,
+              pointHoverRadius: 6,
+              borderWidth: 2
+            },
+            {
+              label: 'Visitors',
+              data: visitorData,
+              borderColor: '#4d9fff',
+              backgroundColor: 'rgba(77,159,255,0.05)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 3,
+              pointHoverRadius: 6,
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { labels: { color: '#60607a', font: { size: 11, family: 'Inter' } } },
+            tooltip: {
+              backgroundColor: '#0e0e1a',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              titleColor: '#f0f0f8',
+              bodyColor: '#a0a0b8',
+              padding: 10
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#60607a', font: { size: 11 } } },
+            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#60607a', font: { size: 11 } } }
+          }
+        }
+      });
+    }
+  }, 100);
+}
+
+function generateInsights(analytics, pages, views) {
+  var insights = [];
+  var today = new Date().toISOString().split('T')[0];
+
+  // Check for traffic drop
+  if (analytics.length >= 4) {
+    var recent = analytics.slice(-2).reduce(function(s, d) { return s + d.page_views; }, 0);
+    var prev = analytics.slice(-4, -2).reduce(function(s, d) { return s + d.page_views; }, 0);
+    if (prev > 0) {
+      var drop = Math.round((prev - recent) / prev * 100);
+      if (drop > 30) {
+        insights.push({ color: 'red', text: '<strong>Traffic dropped ' + drop + '%</strong> compared to the previous period.', time: 'Last 2 days vs prior 2 days' });
+      } else if (drop < -30) {
+        insights.push({ color: 'green', text: '<strong>Traffic increased ' + Math.abs(drop) + '%</strong> compared to the previous period.', time: 'Last 2 days vs prior 2 days' });
+      }
+    }
+  }
+
+  // Mobile dominance
+  var mobileViews = views.filter(function(v) { return v.device === 'mobile'; }).length;
+  var totalV = views.length || 1;
+  if (mobileViews / totalV > 0.6) {
+    insights.push({ color: 'yellow', text: '<strong>' + Math.round(mobileViews/totalV*100) + '% of visitors use mobile.</strong> Make sure all pages are fully mobile-optimized.', time: 'Based on visitor data' });
+  }
+
+  // New countries
+  if (views.length > 0) {
+    var countries = [...new Set(views.map(function(v) { return v.country; }).filter(function(c) { return c && c !== 'Unknown'; }))];
+    if (countries.length > 3) {
+      insights.push({ color: 'blue', text: 'Visitors from <strong>' + countries.length + ' countries</strong> detected. Your reach is growing internationally.', time: 'All time tracked data' });
+    }
+  }
+
+  // High exit on a page
+  var highExitPages = pages.filter(function(p) { return p.exits > 10 && p.exits > p.views * 0.7; });
+  if (highExitPages.length > 0) {
+    insights.push({ color: 'yellow', text: '<strong>' + highExitPages[0].page + '</strong> has a high exit rate (' + Math.round(highExitPages[0].exits / highExitPages[0].views * 100) + '%). Consider reviewing this page.', time: 'Page analysis' });
+  }
+
+  if (insights.length === 0 && analytics.length > 0) {
+    insights.push({ color: 'green', text: '<strong>All metrics look healthy.</strong> Traffic is stable with no anomalies detected.', time: 'Based on ' + RANGE + ' days of data' });
+  }
+
+  return insights;
+}
+
+// ── INIT ──────────────────────────────────────────────────
+waitForSupabase(async function() {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  buildSidebar();
+
+  var { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'forge-ai-login.html'; return; }
+  USER = session.user;
+
+  // Set agency name
+  var agencyName = USER.user_metadata && USER.user_metadata.agency_name || 'Your Agency';
+  var el = document.getElementById('agency-name-sidebar');
+  if (el) el.textContent = agencyName;
+
+  // Get plan
+  var { data: sub } = await sb.from('subscriptions').select('plan').eq('email', USER.email).maybeSingle();
+  var plan = sub && sub.plan ? sub.plan : 'free';
+  var planEl = document.getElementById('plan-badge');
+  if (planEl) { planEl.textContent = plan.charAt(0).toUpperCase() + plan.slice(1); }
+
+  // Update topbar
+  document.getElementById('topbar-sub').textContent = 'Last ' + RANGE + ' days across all tracked sites';
+
+  // Load sites for filter
+  var { data: sites } = await sb.from('user_sites').select('id, name, url').eq('user_id', USER.id).order('name');
+  SITES = sites || [];
+  var filter = document.getElementById('site-filter');
+  SITES.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.name || s.url;
+    filter.appendChild(opt);
+  });
+
+  // Auto-select site if coming from Details modal
+  var urlParams = new URLSearchParams(window.location.search);
+  var siteParam = urlParams.get('site');
+  if (siteParam) {
+    filter.value = siteParam;
+    SELECTED_SITE = siteParam;
+    var selectedSite = SITES.find(function(s) { return s.id === siteParam; });
+    if (selectedSite) {
+      document.getElementById('topbar-sub').textContent = 'Showing analytics for ' + (selectedSite.name || selectedSite.url);
+    }
+  }
+
+  loadAnalytics();
+});
+
+})();
+</script>
+</body>
+</html>
