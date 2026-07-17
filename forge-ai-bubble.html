@@ -263,14 +263,20 @@ code { background: var(--surface2); border: 1px solid var(--border2); padding: 1
       var { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'forge-ai-login.html'; return; }
 
+      // Get agency token from agency_tokens table
+      var { data: tokenData } = await sb.from('agency_tokens')
+        .select('token').eq('user_id', session.user.id).maybeSingle();
+      var agencyToken = tokenData && tokenData.token;
+      if (!agencyToken) { showMsg('err', 'Could not find your agency token. Please go to your dashboard first.'); btn.textContent = 'Add & Monitor →'; btn.disabled = false; return; }
+
       var res = await fetch('https://forgeai-wgs.com/api/register-site', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: url,
           name: name || url,
           platform: 'bubble',
-          token: session.access_token
+          token: agencyToken
         })
       });
 
