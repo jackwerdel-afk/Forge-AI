@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to Forge AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #000; color: #f0f0f5; font-family: 'Inter', -apple-system, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; -webkit-font-smoothing: antialiased; }
+
+/* ── STEP WRAPPER ─── */
+.onboard-wrap { width: 100%; max-width: 480px; padding: 24px; }
+
+/* ── LOGO ─── */
+.logo-wrap { text-align: center; margin-bottom: 36px; }
+.logo-wrap img { width: 72px; height: 93px; display: inline-block; }
+
+/* ── PROGRESS ─── */
+.progress-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 32px; }
+.progress-step { flex: 1; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; transition: background 0.4s ease; }
+.progress-step.done { background: #FF883F; }
+.progress-step.active { background: rgba(255,136,63,0.5); }
+
+/* ── CARD ─── */
+.step-card { background: #0d0d0d; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 32px; }
+.step-label { font-size: 10px; font-weight: 700; color: #FF883F; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+.step-title { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; color: #f0f0f5; margin-bottom: 6px; }
+.step-sub { font-size: 13px; color: #9090a8; margin-bottom: 24px; line-height: 1.5; }
+
+/* ── FIELDS ─── */
+.field { margin-bottom: 14px; }
+.field label { font-size: 12px; font-weight: 600; color: #a0a0b8; display: block; margin-bottom: 6px; }
+.field input, .field select { width: 100%; background: #111; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; padding: 11px 14px; color: #f0f0f5; font-family: 'Inter', sans-serif; font-size: 13px; outline: none; transition: border-color 0.15s; }
+.field input:focus, .field select:focus { border-color: #FF883F; }
+.field input::placeholder { color: #505060; }
+.field select option { background: #111; }
+
+/* ── PLATFORM GRID ─── */
+.platform-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.platform-btn { background: #111; border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; padding: 10px 8px; text-align: center; cursor: pointer; transition: all 0.15s; font-size: 11px; font-weight: 600; color: #9090a8; }
+.platform-btn:hover { border-color: rgba(255,136,63,0.3); color: #f0f0f5; }
+.platform-btn.selected { border-color: #FF883F; background: rgba(255,136,63,0.06); color: #FF883F; }
+.platform-btn img { width: 18px; height: 18px; display: block; margin: 0 auto 5px; }
+
+/* ── BUTTONS ─── */
+.btn-primary { width: 100%; background: #FF883F; color: #fff; border: none; border-radius: 10px; padding: 13px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+.btn-primary:hover { background: #ff6b20; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-skip { width: 100%; background: transparent; border: none; color: #505060; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; padding: 10px; margin-top: 4px; transition: color 0.15s; }
+.btn-skip:hover { color: #9090a8; }
+
+/* ── ERROR ─── */
+.err-msg { background: rgba(255,77,77,0.08); border: 1px solid rgba(255,77,77,0.2); color: #ff6b6b; border-radius: 8px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 14px; display: none; }
+.err-msg.on { display: block; }
+
+/* ── LOADING SCREEN ─── */
+.loading-screen { display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 24px; }
+.loading-screen.active { display: flex; }
+.loading-logo { width: 90px; height: 116px; margin-bottom: 40px; animation: logoPulse 2s ease-in-out infinite; }
+@keyframes logoPulse { 0%,100% { opacity:1; } 50% { opacity:0.7; } }
+.loading-bar-wrap { width: 260px; height: 3px; background: rgba(255,136,63,0.15); border-radius: 2px; overflow: hidden; margin-bottom: 20px; }
+.loading-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #FF883F, #ff6b20); border-radius: 2px; transition: width 0.4s ease; box-shadow: 0 0 12px rgba(255,136,63,0.6); }
+.loading-text { font-size: 13px; color: #9090a8; font-family: 'JetBrains Mono', monospace; }
+
+/* ── STEPS VISIBILITY ─── */
+.step { display: none; animation: stepIn 0.3s ease forwards; }
+.step.active { display: block; }
+@keyframes stepIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+<div class="onboard-wrap">
+
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <img src="https://mybvzjcjfjytcfgitmpv.supabase.co/storage/v1/object/public/assets/forge-ai-logo.png" alt="Forge AI">
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar" id="progress-bar">
+    <div class="progress-step active" id="prog-1"></div>
+    <div class="progress-step" id="prog-2"></div>
+    <div class="progress-step" id="prog-3"></div>
+  </div>
+
+  <!-- Step 1: Your Details -->
+  <div class="step active" id="step-1">
+    <div class="step-card">
+      <div class="step-label">Step 1 of 3</div>
+      <div class="step-title">Tell us about yourself</div>
+      <div class="step-sub">This helps personalize your Forge AI experience.</div>
+      <div class="err-msg" id="err-1"></div>
+      <div class="field">
+        <label>Agency Name</label>
+        <input type="text" id="agency-name" placeholder="Your Agency Name">
+      </div>
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" id="your-name" placeholder="First and last name">
+      </div>
+      <div class="field">
+        <label>Your Role</label>
+        <select id="your-role">
+          <option value="">Select your role</option>
+          <option value="owner">Agency Owner</option>
+          <option value="manager">Account Manager</option>
+          <option value="developer">Developer</option>
+          <option value="designer">Designer</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="nextStep(1)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Contact Info -->
+  <div class="step" id="step-2">
+    <div class="step-card">
+      <div class="step-label">Step 2 of 3</div>
+      <div class="step-title">Contact information</div>
+      <div class="step-sub">Used in client reports and your client portal.</div>
+      <div class="err-msg" id="err-2"></div>
+      <div class="field">
+        <label>Agency Website</label>
+        <input type="url" id="agency-website" placeholder="https://youragency.com">
+      </div>
+      <div class="field">
+        <label>Agency Phone <span style="color:#505060;font-weight:400">(optional)</span></label>
+        <input type="tel" id="agency-phone" placeholder="+1 (555) 000-0000">
+      </div>
+      <div class="field">
+        <label>Report Email <span style="color:#505060;font-weight:400">(optional)</span></label>
+        <input type="email" id="report-email" placeholder="reports@youragency.com">
+      </div>
+      <button class="btn-primary" onclick="nextStep(2)">Continue →</button>
+      <button class="btn-skip" onclick="skipStep(2)">Skip for now</button>
+    </div>
+  </div>
+
+  <!-- Step 3: First Site -->
+  <div class="step" id="step-3">
+    <div class="step-card">
+      <div class="step-label">Step 3 of 3</div>
+      <div class="step-title">Add your first site</div>
+      <div class="step-sub">Start monitoring a client site right now.</div>
+      <div class="err-msg" id="err-3"></div>
+      <div class="field">
+        <label>Platform</label>
+        <div class="platform-grid" id="platform-grid">
+          <div class="platform-btn" data-platform="wordpress" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/wordpress/a0a0b0" alt=""><span>WordPress</span>
+          </div>
+          <div class="platform-btn" data-platform="webflow" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/webflow/a0a0b0" alt=""><span>Webflow</span>
+          </div>
+          <div class="platform-btn" data-platform="wix" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/wix/a0a0b0" alt=""><span>Wix</span>
+          </div>
+          <div class="platform-btn" data-platform="squarespace" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/squarespace/a0a0b0" alt=""><span>Squarespace</span>
+          </div>
+          <div class="platform-btn" data-platform="shopify" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/shopify/a0a0b0" alt=""><span>Shopify</span>
+          </div>
+          <div class="platform-btn" data-platform="other" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/html5/a0a0b0" alt=""><span>Other</span>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Site URL</label>
+        <input type="url" id="first-site-url" placeholder="https://yourclient.com">
+      </div>
+      <div class="field">
+        <label>Site Name <span style="color:#505060;font-weight:400">(optional)</span></label>
+        <input type="text" id="first-site-name" placeholder="Client name">
+      </div>
+      <button class="btn-primary" id="finish-btn" onclick="finish()">Set Up My Account →</button>
+      <button class="btn-skip" onclick="skipStep(3)">Skip — go to dashboard</button>
+    </div>
+  </div>
+
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loading-screen">
+    <img class="loading-logo" src="https://mybvzjcjfjytcfgitmpv.supabase.co/storage/v1/object/public/assets/forge-ai-logo.png" alt="Forge AI">
+    <div class="loading-bar-wrap">
+      <div class="loading-bar" id="loading-bar"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Setting up your account...</div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  var SUPABASE_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  var USER = null;
+  var SELECTED_PLATFORM = '';
+  var CURRENT_STEP = 1;
+
+  // ── INIT ───────────────────────────────────────────────
+  (async function() {
+    var wait = function(cb) { typeof supabase !== 'undefined' ? cb() : setTimeout(function(){wait(cb)}, 100); };
+    wait(async function() {
+      var { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'forge-ai-login.html'; return; }
+      USER = session.user;
+
+      // If already completed onboarding — go to dashboard
+      var meta = USER.user_metadata || {};
+      if (meta.onboarding_complete) {
+        window.location.href = 'forge-ai-dashboard.html';
+        return;
+      }
+
+      // Pre-fill agency name from signup
+      var agencyNameEl = document.getElementById('agency-name');
+      if (agencyNameEl && meta.agency_name) agencyNameEl.value = meta.agency_name;
+    });
+  })();
+
+  // ── PROGRESS ────────────────────────────────────────────
+  function updateProgress(step) {
+    for (var i = 1; i <= 3; i++) {
+      var el = document.getElementById('prog-' + i);
+      if (!el) continue;
+      if (i < step) el.className = 'progress-step done';
+      else if (i === step) el.className = 'progress-step active';
+      else el.className = 'progress-step';
+    }
+  }
+
+  // ── STEP NAVIGATION ─────────────────────────────────────
+  function showStep(n) {
+    document.querySelectorAll('.step').forEach(function(s) { s.classList.remove('active'); });
+    var el = document.getElementById('step-' + n);
+    if (el) el.classList.add('active');
+    CURRENT_STEP = n;
+    updateProgress(n);
+  }
+
+  function showErr(step, msg) {
+    var el = document.getElementById('err-' + step);
+    if (el) { el.textContent = msg; el.className = 'err-msg on'; }
+  }
+
+  function hideErr(step) {
+    var el = document.getElementById('err-' + step);
+    if (el) el.className = 'err-msg';
+  }
+
+  // ── STEP 1 → 2 ──────────────────────────────────────────
+  function nextStep(from) {
+    hideErr(from);
+    if (from === 1) {
+      var name = document.getElementById('agency-name').value.trim();
+      var yourName = document.getElementById('your-name').value.trim();
+      if (!name) { showErr(1, 'Please enter your agency name.'); return; }
+      if (!yourName) { showErr(1, 'Please enter your name.'); return; }
+      showStep(2);
+    } else if (from === 2) {
+      showStep(3);
+    }
+  }
+
+  function skipStep(from) {
+    if (from === 2) showStep(3);
+    else if (from === 3) finish(true);
+  }
+
+  // ── PLATFORM SELECTION ──────────────────────────────────
+  function selectPlatform(el) {
+    document.querySelectorAll('.platform-btn').forEach(function(b) { b.classList.remove('selected'); });
+    el.classList.add('selected');
+    SELECTED_PLATFORM = el.getAttribute('data-platform');
+  }
+
+  // ── FINISH ───────────────────────────────────────────────
+  async function finish(skip) {
+    var btn = document.getElementById('finish-btn');
+
+    if (!skip) {
+      var siteUrl = document.getElementById('first-site-url').value.trim();
+      if (!siteUrl) { showErr(3, 'Please enter a site URL or click Skip.'); return; }
+      if (!siteUrl.startsWith('http')) siteUrl = 'https://' + siteUrl;
+    }
+
+    // Show loading screen
+    document.querySelectorAll('.step').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('progress-bar').style.display = 'none';
+    var loadingScreen = document.getElementById('loading-screen');
+    loadingScreen.classList.add('active');
+
+    var bar = document.getElementById('loading-bar');
+    var loadingText = document.getElementById('loading-text');
+
+    function setProgress(pct, text) {
+      bar.style.width = pct + '%';
+      if (text) loadingText.textContent = text;
+    }
+
+    try {
+      setProgress(15, 'Saving your profile...');
+      await new Promise(function(r) { setTimeout(r, 400); });
+
+      // Save all settings to user_metadata
+      var agencyName = document.getElementById('agency-name').value.trim();
+      var yourName = document.getElementById('your-name').value.trim();
+      var role = document.getElementById('your-role').value;
+      var website = document.getElementById('agency-website').value.trim();
+      var phone = document.getElementById('agency-phone').value.trim();
+      var reportEmail = document.getElementById('report-email').value.trim();
+
+      var currentMeta = (USER.user_metadata || {});
+      var currentSettings = currentMeta.forge_settings || {};
+
+      await sb.auth.updateUser({
+        data: {
+          ...currentMeta,
+          agency_name: agencyName || currentMeta.agency_name,
+          your_name: yourName,
+          role: role,
+          agency_website: website,
+          agency_phone: phone,
+          report_email: reportEmail,
+          forge_settings: {
+            ...currentSettings,
+            report_agency_name: agencyName || currentMeta.agency_name,
+            agency_website: website,
+            agency_phone: phone,
+            report_email: reportEmail,
+            onboarding_role: role
+          },
+          onboarding_complete: true
+        }
+      });
+
+      setProgress(45, 'Profile saved...');
+      await new Promise(function(r) { setTimeout(r, 500); });
+
+      // Add first site if provided
+      if (!skip) {
+        var siteUrl = document.getElementById('first-site-url').value.trim();
+        var siteName = document.getElementById('first-site-name').value.trim();
+        if (!siteUrl.startsWith('http')) siteUrl = 'https://' + siteUrl;
+
+        setProgress(65, 'Adding your first site...');
+
+        // Get agency token
+        var { data: tokenData } = await sb.from('agency_tokens').select('token').eq('user_id', USER.id).maybeSingle();
+        var agencyToken = tokenData && tokenData.token;
+
+        if (agencyToken) {
+          await fetch('https://forgeai-wgs.com/api/register-site', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: siteUrl,
+              name: siteName || siteUrl,
+              platform: SELECTED_PLATFORM || 'other',
+              token: agencyToken
+            })
+          });
+        }
+
+        setProgress(85, 'Running first scan...');
+        await new Promise(function(r) { setTimeout(r, 800); });
+      }
+
+      setProgress(100, 'All done!');
+      await new Promise(function(r) { setTimeout(r, 700); });
+
+      window.location.href = 'forge-ai-dashboard.html';
+
+    } catch(e) {
+      console.error('Onboarding error:', e.message);
+      // Don't block — just go to dashboard
+      window.location.href = 'forge-ai-dashboard.html';
+    }
+  }
+
+  // Expose globals
+  window.nextStep = nextStep;
+  window.skipStep = skipStep;
+  window.selectPlatform = selectPlatform;
+  window.finish = finish;
+})();
+</script>
+</body>
+</html>
