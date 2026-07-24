@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to Forge AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #000; color: #f0f0f5; font-family: 'Inter', -apple-system, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; -webkit-font-smoothing: antialiased; }
+
+.wrap { width: 100%; max-width: 480px; padding: 24px; }
+
+/* Logo */
+.logo-wrap { text-align: center; margin-bottom: 32px; }
+.logo-wrap img { width: 72px; height: 93px; display: inline-block; }
+
+/* Progress */
+.progress-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 28px; }
+.prog-step { flex: 1; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; transition: background 0.4s ease; }
+.prog-step.done { background: #FF883F; }
+.prog-step.active { background: rgba(255,136,63,0.45); }
+
+/* Card */
+.card { background: #0d0d0d; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 28px; }
+.step-label { font-size: 10px; font-weight: 700; color: #FF883F; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+.step-title { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; color: #f0f0f5; margin-bottom: 6px; }
+.step-sub { font-size: 13px; color: #9090a8; margin-bottom: 22px; line-height: 1.5; }
+
+/* Fields */
+.field { margin-bottom: 14px; }
+.field label { font-size: 12px; font-weight: 600; color: #a0a0b8; display: block; margin-bottom: 6px; }
+.field input, .field select { width: 100%; background: #111; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; padding: 11px 14px; color: #f0f0f5; font-family: 'Inter', sans-serif; font-size: 13px; outline: none; transition: border-color 0.15s; appearance: none; }
+.field input:focus, .field select:focus { border-color: #FF883F; }
+.field input::placeholder { color: #505060; }
+.field select option { background: #111; }
+
+/* PIN */
+.pin-row { display: flex; gap: 8px; justify-content: flex-start; }
+.pin-input { width: 44px; height: 48px; background: #111; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; color: #f0f0f5; font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; text-align: center; outline: none; transition: border-color 0.15s; -webkit-text-security: disc; }
+.pin-input:focus { border-color: #FF883F; }
+
+/* Platform grid */
+.platform-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.plat-btn { background: #111; border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; padding: 10px 8px; text-align: center; cursor: pointer; transition: all 0.15s; font-size: 11px; font-weight: 600; color: #9090a8; }
+.plat-btn:hover { border-color: rgba(255,136,63,0.3); color: #f0f0f5; }
+.plat-btn.selected { border-color: #FF883F; background: rgba(255,136,63,0.06); color: #FF883F; }
+.plat-btn img { width: 16px; height: 16px; display: block; margin: 0 auto 4px; }
+
+/* Buttons */
+.btn-primary { width: 100%; background: #FF883F; color: #fff; border: none; border-radius: 10px; padding: 13px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.15s; margin-top: 6px; }
+.btn-primary:hover { background: #ff6b20; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-skip { width: 100%; background: transparent; border: none; color: #505060; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; padding: 10px; margin-top: 4px; transition: color 0.15s; }
+.btn-skip:hover { color: #9090a8; }
+
+/* Terms */
+.terms-check { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 18px; }
+.terms-check input[type=checkbox] { width: 16px; height: 16px; margin-top: 2px; accent-color: #FF883F; flex-shrink: 0; cursor: pointer; }
+.terms-check label { font-size: 12px; color: #9090a8; line-height: 1.6; cursor: pointer; }
+.terms-check a { color: #FF883F; text-decoration: none; }
+.terms-check a:hover { text-decoration: underline; }
+
+/* Error */
+.err-msg { background: rgba(255,77,77,0.08); border: 1px solid rgba(255,77,77,0.2); color: #ff6b6b; border-radius: 8px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 14px; display: none; }
+.err-msg.on { display: block; }
+
+/* Steps */
+.step { display: none; }
+.step.active { display: block; animation: fadeUp 0.3s ease forwards; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* Loading */
+.loading-screen { display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 24px; }
+.loading-screen.active { display: flex; }
+.loading-logo { width: 80px; height: 103px; margin-bottom: 36px; }
+.bar-wrap { width: 240px; height: 3px; background: rgba(255,136,63,0.15); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+.bar { height: 100%; width: 0%; background: linear-gradient(90deg, #FF883F, #ff6b20); border-radius: 2px; transition: width 0.5s ease; box-shadow: 0 0 12px rgba(255,136,63,0.5); }
+.loading-text { font-size: 12px; color: #606070; font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <img src="https://mybvzjcjfjytcfgitmpv.supabase.co/storage/v1/object/public/assets/forge-ai-logo.png" alt="Forge AI">
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="progress-bar">
+    <div class="prog-step active" id="prog-1"></div>
+    <div class="prog-step" id="prog-2"></div>
+    <div class="prog-step" id="prog-3"></div>
+    <div class="prog-step" id="prog-4"></div>
+  </div>
+
+  <!-- Step 1: Agency Setup -->
+  <div class="step active" id="step-1">
+    <div class="card">
+      <div class="step-label">Step 1 of 4</div>
+      <div class="step-title">Set up your agency</div>
+      <div class="step-sub">Tell us about your agency so we can personalize your experience.</div>
+      <div class="err-msg" id="err-1"></div>
+      <div class="field">
+        <label>Agency Name</label>
+        <input type="text" id="agency-name" placeholder="Your Agency Name" maxlength="60">
+      </div>
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" id="your-name" placeholder="First and last name">
+      </div>
+      <div class="field">
+        <label>Your Role</label>
+        <select id="your-role">
+          <option value="">Select your role</option>
+          <option value="owner">Agency Owner</option>
+          <option value="manager">Account Manager</option>
+          <option value="developer">Developer</option>
+          <option value="designer">Designer</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <!-- Terms — shown for Google users who didn't see signup page -->
+      <div class="terms-check" id="terms-section" style="display:none">
+        <input type="checkbox" id="terms-check">
+        <label for="terms-check">I have read and agree to the <a href="forge-ai-terms.html" target="_blank">Terms of Service</a> and <a href="forge-ai-privacy.html" target="_blank">Privacy Policy</a>. I confirm I am 13 or older.</label>
+      </div>
+      <button class="btn-primary" onclick="nextStep(1)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Security PIN -->
+  <div class="step" id="step-2">
+    <div class="card">
+      <div class="step-label">Step 2 of 4</div>
+      <div class="step-title">Set your security PIN</div>
+      <div class="step-sub">A 6-digit PIN that protects access to sensitive actions and your client portal.</div>
+      <div class="err-msg" id="err-2"></div>
+      <div class="field">
+        <label>Security PIN (6 digits)</label>
+        <div class="pin-row">
+          <input type="tel" class="pin-input" maxlength="1" id="p1">
+          <input type="tel" class="pin-input" maxlength="1" id="p2">
+          <input type="tel" class="pin-input" maxlength="1" id="p3">
+          <input type="tel" class="pin-input" maxlength="1" id="p4">
+          <input type="tel" class="pin-input" maxlength="1" id="p5">
+          <input type="tel" class="pin-input" maxlength="1" id="p6">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="nextStep(2)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Contact Info -->
+  <div class="step" id="step-3">
+    <div class="card">
+      <div class="step-label">Step 3 of 4</div>
+      <div class="step-title">Contact information</div>
+      <div class="step-sub">Shown in client reports and your client portal. All fields are optional.</div>
+      <div class="err-msg" id="err-3"></div>
+      <div class="field">
+        <label>Agency Website</label>
+        <input type="url" id="agency-website" placeholder="https://youragency.com">
+      </div>
+      <div class="field">
+        <label>Agency Phone</label>
+        <input type="tel" id="agency-phone" placeholder="+1 (555) 000-0000">
+      </div>
+      <div class="field">
+        <label>Report Email</label>
+        <input type="email" id="report-email" placeholder="reports@youragency.com">
+      </div>
+      <button class="btn-primary" onclick="nextStep(3)">Continue →</button>
+      <button class="btn-skip" onclick="skipStep(3)">Skip for now</button>
+    </div>
+  </div>
+
+  <!-- Step 4: First Site -->
+  <div class="step" id="step-4">
+    <div class="card">
+      <div class="step-label">Step 4 of 4</div>
+      <div class="step-title">Add your first site</div>
+      <div class="step-sub">Start monitoring a site right now. We'll scan it automatically.</div>
+      <div class="err-msg" id="err-4"></div>
+      <div class="field">
+        <label>Platform</label>
+        <div class="platform-grid">
+          <div class="plat-btn" data-platform="wordpress" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/wordpress/a0a0b0" alt="">WordPress
+          </div>
+          <div class="plat-btn" data-platform="webflow" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/webflow/a0a0b0" alt="">Webflow
+          </div>
+          <div class="plat-btn" data-platform="wix" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/wix/a0a0b0" alt="">Wix
+          </div>
+          <div class="plat-btn" data-platform="squarespace" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/squarespace/a0a0b0" alt="">Squarespace
+          </div>
+          <div class="plat-btn" data-platform="shopify" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/shopify/a0a0b0" alt="">Shopify
+          </div>
+          <div class="plat-btn selected" data-platform="other" onclick="selectPlatform(this)">
+            <img src="https://cdn.simpleicons.org/html5/a0a0b0" alt="">Other
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Site URL</label>
+        <input type="url" id="first-site-url" placeholder="https://yourclient.com">
+      </div>
+      <div class="field">
+        <label>Site Name <span style="color:#505060;font-weight:400">(optional)</span></label>
+        <input type="text" id="first-site-name" placeholder="Client name">
+      </div>
+      <button class="btn-primary" onclick="finish(false)">Finish Setup →</button>
+      <button class="btn-skip" onclick="finish(true)">Skip — go to dashboard</button>
+    </div>
+  </div>
+
+  <!-- Loading screen -->
+  <div class="loading-screen" id="loading-screen">
+    <img class="loading-logo" src="https://mybvzjcjfjytcfgitmpv.supabase.co/storage/v1/object/public/assets/forge-ai-logo.png" alt="Forge AI">
+    <div class="bar-wrap">
+      <div class="bar" id="loading-bar"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Setting up your account...</div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  var SUPABASE_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  var USER = null;
+  var IS_GOOGLE = false;
+  var SELECTED_PLATFORM = 'other';
+  var CURRENT_STEP = 1;
+
+  // ── INIT ──────────────────────────────────────────────
+  (async function init() {
+    var wait = function(cb) { typeof supabase !== 'undefined' ? cb() : setTimeout(function(){wait(cb)},100); };
+    wait(async function() {
+      var { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'forge-ai-login.html'; return; }
+      USER = session.user;
+
+      // If already completed onboarding — go to dashboard
+      var meta = USER.user_metadata || {};
+      if (meta.onboarding_complete === true) {
+        window.location.href = 'forge-ai-dashboard.html';
+        return;
+      }
+
+      // Detect Google user (no password set = social login)
+      IS_GOOGLE = USER.app_metadata && USER.app_metadata.provider === 'google';
+
+      // Show Terms checkbox for Google users
+      if (IS_GOOGLE) {
+        var termsSection = document.getElementById('terms-section');
+        if (termsSection) termsSection.style.display = 'flex';
+      }
+
+      // Pre-fill agency name from metadata if available
+      var agencyNameEl = document.getElementById('agency-name');
+      if (agencyNameEl && meta.agency_name) agencyNameEl.value = meta.agency_name;
+    });
+  })();
+
+  // ── PROGRESS ────────────────────────────────────────────
+  function updateProgress(step) {
+    for (var i = 1; i <= 4; i++) {
+      var el = document.getElementById('prog-' + i);
+      if (!el) continue;
+      if (i < step) el.className = 'prog-step done';
+      else if (i === step) el.className = 'prog-step active';
+      else el.className = 'prog-step';
+    }
+  }
+
+  function showStep(n) {
+    document.querySelectorAll('.step').forEach(function(s) { s.classList.remove('active'); });
+    var el = document.getElementById('step-' + n);
+    if (el) el.classList.add('active');
+    CURRENT_STEP = n;
+    updateProgress(n);
+    window.scrollTo(0, 0);
+  }
+
+  function showErr(step, msg) {
+    var el = document.getElementById('err-' + step);
+    if (el) { el.textContent = msg; el.className = 'err-msg on'; }
+  }
+
+  function hideErr(step) {
+    var el = document.getElementById('err-' + step);
+    if (el) el.className = 'err-msg';
+  }
+
+  // ── STEP NAVIGATION ─────────────────────────────────────
+  function nextStep(from) {
+    hideErr(from);
+
+    if (from === 1) {
+      var agencyName = document.getElementById('agency-name').value.trim();
+      var yourName = document.getElementById('your-name').value.trim();
+      if (!agencyName) { showErr(1, 'Please enter your agency name.'); return; }
+      if (!yourName) { showErr(1, 'Please enter your name.'); return; }
+      // Google users must agree to terms
+      if (IS_GOOGLE) {
+        var termsCheck = document.getElementById('terms-check');
+        if (!termsCheck || !termsCheck.checked) {
+          showErr(1, 'Please read and agree to the Terms of Service to continue.');
+          return;
+        }
+      }
+      showStep(2);
+      // Focus first PIN input
+      setTimeout(function() { var p = document.getElementById('p1'); if (p) p.focus(); }, 100);
+    } else if (from === 2) {
+      var pin = getPin();
+      if (pin.length !== 6) { showErr(2, 'Please enter all 6 digits of your security PIN.'); return; }
+      if (!/^\d{6}$/.test(pin)) { showErr(2, 'PIN must be 6 numbers only.'); return; }
+      showStep(3);
+    } else if (from === 3) {
+      showStep(4);
+    }
+  }
+
+  function skipStep(from) {
+    hideErr(from);
+    if (from === 3) showStep(4);
+  }
+
+  // ── PIN ──────────────────────────────────────────────────
+  function getPin() {
+    var pin = '';
+    for (var i = 1; i <= 6; i++) {
+      var el = document.getElementById('p' + i);
+      if (el) pin += el.value;
+    }
+    return pin;
+  }
+
+  function hashPin(pin) {
+    // Must match settings hashPin exactly
+    var salt = 'forgeai_pin_';
+    var str = salt + pin;
+    var hash = 0;
+    for (var i = 0; i < str.length; i++) {
+      var char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return hash.toString(36);
+  }
+
+  // Auto-advance PIN inputs
+  document.addEventListener('input', function(e) {
+    if (!e.target.classList.contains('pin-input')) return;
+    var id = e.target.id;
+    var num = parseInt(id.replace('p', ''));
+    if (e.target.value && num < 6) {
+      var next = document.getElementById('p' + (num + 1));
+      if (next) next.focus();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (!e.target.classList.contains('pin-input')) return;
+    if (e.key === 'Backspace' && !e.target.value) {
+      var id = e.target.id;
+      var num = parseInt(id.replace('p', ''));
+      if (num > 1) {
+        var prev = document.getElementById('p' + (num - 1));
+        if (prev) { prev.value = ''; prev.focus(); }
+      }
+    }
+  });
+
+  // ── PLATFORM ─────────────────────────────────────────────
+  function selectPlatform(el) {
+    document.querySelectorAll('.plat-btn').forEach(function(b) { b.classList.remove('selected'); });
+    el.classList.add('selected');
+    SELECTED_PLATFORM = el.getAttribute('data-platform');
+  }
+
+  // ── FINISH ───────────────────────────────────────────────
+  async function finish(skip) {
+    hideErr(4);
+
+    var siteUrl = '';
+    if (!skip) {
+      siteUrl = document.getElementById('first-site-url').value.trim();
+      if (!siteUrl) { showErr(4, 'Please enter a site URL or click Skip.'); return; }
+      if (!siteUrl.startsWith('http')) siteUrl = 'https://' + siteUrl;
+    }
+
+    // Show loading — hide top logo so only loading screen logo shows
+    document.querySelectorAll('.step').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('progress-bar').style.display = 'none';
+    var logoWrap = document.querySelector('.logo-wrap');
+    if (logoWrap) logoWrap.style.display = 'none';
+    var loadingScreen = document.getElementById('loading-screen');
+    loadingScreen.classList.add('active');
+
+    var bar = document.getElementById('loading-bar');
+    var loadingText = document.getElementById('loading-text');
+
+    function setProgress(pct, text) {
+      bar.style.width = pct + '%';
+      if (text) loadingText.textContent = text;
+    }
+
+    try {
+      setProgress(10, 'Saving your profile...');
+      await new Promise(function(r) { setTimeout(r, 300); });
+
+      // Collect all data
+      var agencyName = document.getElementById('agency-name').value.trim();
+      var yourName = document.getElementById('your-name').value.trim();
+      var role = document.getElementById('your-role').value;
+      var website = document.getElementById('agency-website').value.trim();
+      var phone = document.getElementById('agency-phone').value.trim();
+      var reportEmail = document.getElementById('report-email').value.trim();
+      var siteName = skip ? '' : (document.getElementById('first-site-name').value.trim());
+      var pin = getPin();
+      var pinHash = pin ? hashPin(pin) : null;
+      var termsAgreedAt = IS_GOOGLE ? new Date().toISOString() : (USER.user_metadata && USER.user_metadata.terms_agreed_at) || new Date().toISOString();
+
+      // Save all to user_metadata
+      var currentMeta = USER.user_metadata || {};
+      await sb.auth.updateUser({
+        data: {
+          ...currentMeta,
+          agency_name: agencyName,
+          your_name: yourName,
+          role: role,
+          agency_phone: phone,
+          agency_website: website,
+          terms_agreed_at: termsAgreedAt,
+          onboarding_complete: true,
+          forge_settings: {
+            ...(currentMeta.forge_settings || {}),
+            pin_hash: pinHash,
+            agency_phone: phone,
+            agency_website: website,
+            report_email: reportEmail,
+            report_agency_name: agencyName,
+            onboarding_role: role
+          }
+        }
+      });
+
+      setProgress(40, 'Profile saved...');
+      await new Promise(function(r) { setTimeout(r, 300); });
+
+      // Get agency token (created during email confirmation)
+      setProgress(55, 'Preparing your account...');
+      var agencyToken = null;
+      var { data: tokenRow } = await sb.from('agency_tokens').select('token').eq('user_id', USER.id).maybeSingle();
+      if (tokenRow) {
+        agencyToken = tokenRow.token;
+        console.log('Agency token found:', agencyToken);
+      } else {
+        // Fallback: create it now if missing
+        agencyToken = 'fat_' + USER.id.replace(/-/g,'').slice(0,16) + '_forgeai';
+        await sb.from('agency_tokens').upsert(
+          { user_id: USER.id, token: agencyToken },
+          { onConflict: 'user_id' }
+        );
+        console.log('Agency token created as fallback:', agencyToken);
+        await new Promise(function(r) { setTimeout(r, 1000); });
+      }
+
+      setProgress(65, 'Almost there...');
+      await new Promise(function(r) { setTimeout(r, 200); });
+
+      // Add first site if provided — fire and don't wait
+      if (!skip && siteUrl) {
+        setProgress(80, 'Adding your first site...');
+        try {
+          setProgress(80, 'Registering your site...');
+          var regRes = await fetch('https://forgeai-wgs.com/api/register-site', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: siteUrl,
+              name: siteName || siteUrl.replace(/https?:\/\//, '').split('/')[0],
+              platform: SELECTED_PLATFORM || 'other',
+              token: agencyToken
+            })
+          });
+          var regData = await regRes.json();
+          console.log('Register site result:', regData);
+          setProgress(92, 'Scanning your site...');
+          await new Promise(function(r) { setTimeout(r, 2000); });
+        } catch(e) { console.log('Site register error:', e.message); }
+      }
+
+      setProgress(100, 'All done!');
+      await new Promise(function(r) { setTimeout(r, 600); });
+
+      // Go to dashboard — pass newsite param so dashboard shows scanning banner
+      var dashUrl = 'forge-ai-dashboard.html';
+      if (!skip && siteUrl) dashUrl += '?newsite=1';
+      window.location.href = dashUrl;
+
+    } catch(e) {
+      console.error('Onboarding error:', e.message);
+      // Don't block — go to dashboard anyway
+      window.location.href = 'forge-ai-dashboard.html';
+    }
+  }
+
+  // Expose globals
+  window.nextStep = nextStep;
+  window.skipStep = skipStep;
+  window.selectPlatform = selectPlatform;
+  window.finish = finish;
+})();
+</script>
+</body>
+</html>
