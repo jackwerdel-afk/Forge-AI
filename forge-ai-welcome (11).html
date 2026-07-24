@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to Forge AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #000; color: #f0f0f5; font-family: 'Inter', -apple-system, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; -webkit-font-smoothing: antialiased; }
+
+.wrap { width: 100%; max-width: 480px; padding: 24px; }
+
+/* Logo */
+.logo-wrap { text-align: center; margin-bottom: 32px; }
+.logo-wrap img { width: 72px; height: 93px; display: inline-block; }
+
+/* Progress */
+.progress-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 28px; }
+.prog-step { flex: 1; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; transition: background 0.4s ease; }
+.prog-step.done { background: #FF883F; }
+.prog-step.active { background: rgba(255,136,63,0.45); }
+
+/* Card */
+.card { background: #0d0d0d; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 28px; }
+.step-label { font-size: 10px; font-weight: 700; color: #FF883F; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+.step-title { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; color: #f0f0f5; margin-bottom: 6px; }
+.step-sub { font-size: 13px; color: #9090a8; margin-bottom: 22px; line-height: 1.5; }
+
+/* Fields */
+.field { margin-bottom: 14px; }
+.field label { font-size: 12px; font-weight: 600; color: #a0a0b8; display: block; margin-bottom: 6px; }
+.field input, .field select { width: 100%; background: #111; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; padding: 11px 14px; color: #f0f0f5; font-family: 'Inter', sans-serif; font-size: 13px; outline: none; transition: border-color 0.15s; appearance: none; }
+.field input:focus, .field select:focus { border-color: #FF883F; }
+.field input::placeholder { color: #505060; }
+.field select option { background: #111; }
+
+/* PIN */
+.pin-row { display: flex; gap: 8px; justify-content: flex-start; }
+.pin-input { width: 44px; height: 48px; background: #111; border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; color: #f0f0f5; font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; text-align: center; outline: none; transition: border-color 0.15s; -webkit-text-security: disc; }
+.pin-input:focus { border-color: #FF883F; }
+
+/* Platform grid */
+.platform-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.plat-btn { background: #111; border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; padding: 10px 8px; text-align: center; cursor: pointer; transition: all 0.15s; font-size: 11px; font-weight: 600; color: #9090a8; }
+.plat-btn:hover { border-color: rgba(255,136,63,0.3); color: #f0f0f5; }
+.plat-btn.selected { border-color: #FF883F; background: rgba(255,136,63,0.06); color: #FF883F; }
+.plat-btn img { width: 16px; height: 16px; display: block; margin: 0 auto 4px; }
+
+/* Buttons */
+.btn-primary { width: 100%; background: #FF883F; color: #fff; border: none; border-radius: 10px; padding: 13px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.15s; margin-top: 6px; }
+.btn-primary:hover { background: #ff6b20; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-skip { width: 100%; background: transparent; border: none; color: #505060; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; padding: 10px; margin-top: 4px; transition: color 0.15s; }
+.btn-skip:hover { color: #9090a8; }
+
+/* Terms */
+.terms-check { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 18px; }
+.terms-check input[type=checkbox] { width: 16px; height: 16px; margin-top: 2px; accent-color: #FF883F; flex-shrink: 0; cursor: pointer; }
+.terms-check label { font-size: 12px; color: #9090a8; line-height: 1.6; cursor: pointer; }
+.terms-check a { color: #FF883F; text-decoration: none; }
+.terms-check a:hover { text-decoration: underline; }
+
+/* Error */
+.err-msg { background: rgba(255,77,77,0.08); border: 1px solid rgba(255,77,77,0.2); color: #ff6b6b; border-radius: 8px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 14px; display: none; }
+.err-msg.on { display: block; }
+
+/* Steps */
+.step { display: none; }
+.step.active { display: block; animation: fadeUp 0.3s ease forwards; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* Loading */
+.loading-screen { display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 24px; }
+.loading-screen.active { display: flex; }
+.loading-logo { width: 80px; height: 103px; margin-bottom: 36px; }
+.bar-wrap { width: 240px; height: 3px; background: rgba(255,136,63,0.15); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+.bar { height: 100%; width: 0%; background: linear-gradient(90deg, #FF883F, #ff6b20); border-radius: 2px; transition: width 0.5s ease; box-shadow: 0 0 12px rgba(255,136,63,0.5); }
+.loading-text { font-size: 12px; color: #606070; font-family: 'JetBrains Mono', monospace; }
+
+/* ── LEGAL MODAL ─────────────────────────────── */
+.legal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:center;justify-content:center;padding:20px;animation:fadeIn 0.2s ease; }
+.legal-overlay.open { display:flex; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.legal-modal { background:#0d0d0d;border:1px solid rgba(255,255,255,0.1);border-radius:16px;width:100%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;animation:modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes modalIn { from{opacity:0;transform:scale(0.95) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.legal-modal-head { display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0; }
+.legal-modal-head h3 { font-size:14px;font-weight:700;color:#f0f0f5;margin:0; }
+.legal-modal-close { width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,0.07);border:none;color:#9090a8;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s; }
+.legal-modal-close:hover { background:rgba(255,255,255,0.12);color:#f0f0f5; }
+.legal-modal-body { overflow-y:auto;padding:20px 22px;flex:1;font-size:12.5px;color:#9090a8;line-height:1.8; }
+.legal-modal-body .section { margin-bottom:20px; }
+.legal-modal-body .section-num { font-size:10px;font-weight:700;color:#FF883F;font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px; }
+.legal-modal-body .section-title { font-size:13px;font-weight:700;color:#f0f0f5;margin-bottom:8px; }
+.legal-modal-body .section-body { color:#9090a8; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <img src="https://mybvzjcjfjytcfgitmpv.supabase.co/storage/v1/object/public/assets/forge-ai-logo.png" alt="Forge AI">
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="progress-bar">
+    <div class="prog-step active" id="prog-1"></div>
+    <div class="prog-step" id="prog-2"></div>
+    <div class="prog-step" id="prog-3"></div>
+    <div class="prog-step" id="prog-4"></div>
+  </div>
+
+  <!-- Step 1: Agency Setup -->
+  <div class="step active" id="step-1">
+    <div class="card">
+      <div class="step-label">Step 1 of 4</div>
+      <div class="step-title">Set up your agency</div>
+      <div class="step-sub">Tell us about your agency so we can personalize your experience.</div>
+      <div class="err-msg" id="err-1"></div>
+      <div class="field">
+        <label>Agency Name</label>
+        <input type="text" id="agency-name" placeholder="Your Agency Name" maxlength="60">
+      </div>
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" id="your-name" placeholder="First and last name">
+      </div>
+      <div class="field">
+        <label>Your Role</label>
+        <select id="your-role">
+          <option value="">Select your role</option>
+          <option value="owner">Agency Owner</option>
+          <option value="manager">Account Manager</option>
+          <option value="developer">Developer</option>
+          <option value="designer">Designer</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <!-- Terms — shown for Google users who didn't see signup page -->
+      <div class="terms-check" id="terms-section" style="display:none">
+        <input type="checkbox" id="terms-check">
+        <label for="terms-check">I have read and agree to the <a href="#" onclick="openLegal('terms');return false;">Terms of Service</a> and <a href="#" onclick="openLegal('privacy');return false;">Privacy Policy</a>. I confirm I am 13 or older.</label>
+      </div>
+      <button class="btn-primary" onclick="nextStep(1)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Security PIN -->
+  <div class="step" id="step-2">
+    <div class="card">
+      <div class="step-label">Step 2 of 4</div>
+      <div class="step-title">Set your security PIN</div>
+      <div class="step-sub">A 6-digit PIN that protects access to sensitive actions and your client portal.</div>
+      <div class="err-msg" id="err-2"></div>
+      <div class="field">
+        <label>Security PIN (6 digits)</label>
+        <div class="pin-row">
+          <input type="tel" class="pin-input" maxlength="1" id="p1">
+          <input type="tel" class="pin-input" maxlength="1" id="p2">
+          <input type="tel" class="pin-input" maxlength="1" id="p3">
+          <input type="tel" class="pin-input" maxlength="1" id="p4">
+          <input type="tel" class="pin-input" maxlength="1" id="p5">
+          <input type="tel" class="pin-input" maxlength="1" id="p6">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="nextStep(2)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Contact Info -->
+  <div class="step" id="step-3">
+    <div class="card">
+      <div class="step-label">Step 3 of 4</div>
+      <div class="step-title">Contact information</div>
+      <div class="step-sub">Shown in client reports and your client portal. All fields are optional.</div>
+      <div class="err-msg" id="err-3"></div>
+      <div class="field">
+        <label>Agency Website</label>
+        <input type="url" id="agency-website" placeholder="https://youragency.com">
+      </div>
+      <div class="field">
+        <label>Agency Phone</label>
+        <input type="tel" id="agency-phone" placeholder="+1 (555) 000-0000">
+      </div>
+      <div class="field">
+        <label>Report Email</label>
+        <input type="email" id="report-email" placeholder="reports@youragency.com">
+      </div>
+      <button class="btn-primary" onclick="nextStep(3)">Continue →</button>
+      <button class="btn-skip" onclick="skipStep(3)">Skip for now</button>
+    </div>
+  </div>
+
+  <!-- Step 4: First Site -->
+  <div class="step" id="step-4">
+    <div class="card">
+      <div class="step-label">Step 4 of 4</div>
+      <div class="step-title">Add your first site</div>
+      <div class="step-sub">Start monitoring a site right now. We'll scan it automatically.</div>
+      <div class="err-msg" id="err-4"></div>
+
+      <div class="field">
+        <label>Site URL</label>
+        <input type="url" id="first-site-url" placeholder="https://yourclient.com">
+      </div>
+      <div class="field">
+        <label>Site Name <span style="color:#505060;font-weight:400">(optional)</span></label>
+        <input type="text" id="first-site-name" placeholder="Client name">
+      </div>
+      <button class="btn-primary" onclick="finish(false)">Finish Setup →</button>
+      <button class="btn-skip" onclick="finish(true)">Skip — go to dashboard</button>
+    </div>
+  </div>
+
+  <!-- Loading screen -->
+  <div class="loading-screen" id="loading-screen">
+    <img class="loading-logo" src="https://mybvzjcjfjytcfgitmpv.supabase.co/storage/v1/object/public/assets/forge-ai-logo.png" alt="Forge AI">
+    <div class="bar-wrap">
+      <div class="bar" id="loading-bar"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Setting up your account...</div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  var SUPABASE_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  var USER = null;
+  var IS_GOOGLE = false;
+  var SELECTED_PLATFORM = 'other';
+  var CURRENT_STEP = 1;
+
+  // ── INIT ──────────────────────────────────────────────
+  (async function init() {
+    var wait = function(cb) { typeof supabase !== 'undefined' ? cb() : setTimeout(function(){wait(cb)},100); };
+    wait(async function() {
+      var { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'forge-ai-login.html'; return; }
+      USER = session.user;
+
+      // If already completed onboarding — go to dashboard
+      var meta = USER.user_metadata || {};
+      if (meta.onboarding_complete === true) {
+        window.location.href = 'forge-ai-dashboard.html';
+        return;
+      }
+
+      // Detect Google user (no password set = social login)
+      IS_GOOGLE = USER.app_metadata && USER.app_metadata.provider === 'google';
+
+      // Show Terms checkbox for Google users
+      if (IS_GOOGLE) {
+        var termsSection = document.getElementById('terms-section');
+        if (termsSection) termsSection.style.display = 'flex';
+      }
+
+      // Pre-fill agency name from metadata if available
+      var agencyNameEl = document.getElementById('agency-name');
+      if (agencyNameEl && meta.agency_name) agencyNameEl.value = meta.agency_name;
+    });
+  })();
+
+  // ── PROGRESS ────────────────────────────────────────────
+  function updateProgress(step) {
+    for (var i = 1; i <= 4; i++) {
+      var el = document.getElementById('prog-' + i);
+      if (!el) continue;
+      if (i < step) el.className = 'prog-step done';
+      else if (i === step) el.className = 'prog-step active';
+      else el.className = 'prog-step';
+    }
+  }
+
+  function showStep(n) {
+    document.querySelectorAll('.step').forEach(function(s) { s.classList.remove('active'); });
+    var el = document.getElementById('step-' + n);
+    if (el) el.classList.add('active');
+    CURRENT_STEP = n;
+    updateProgress(n);
+    window.scrollTo(0, 0);
+  }
+
+  function showErr(step, msg) {
+    var el = document.getElementById('err-' + step);
+    if (el) { el.textContent = msg; el.className = 'err-msg on'; }
+  }
+
+  function hideErr(step) {
+    var el = document.getElementById('err-' + step);
+    if (el) el.className = 'err-msg';
+  }
+
+  // ── STEP NAVIGATION ─────────────────────────────────────
+  function nextStep(from) {
+    hideErr(from);
+
+    if (from === 1) {
+      var agencyName = document.getElementById('agency-name').value.trim();
+      var yourName = document.getElementById('your-name').value.trim();
+      if (!agencyName) { showErr(1, 'Please enter your agency name.'); return; }
+      if (!yourName) { showErr(1, 'Please enter your name.'); return; }
+      // Google users must agree to terms
+      if (IS_GOOGLE) {
+        var termsCheck = document.getElementById('terms-check');
+        if (!termsCheck || !termsCheck.checked) {
+          showErr(1, 'Please read and agree to the Terms of Service to continue.');
+          return;
+        }
+      }
+      showStep(2);
+      // Focus first PIN input
+      setTimeout(function() { var p = document.getElementById('p1'); if (p) p.focus(); }, 100);
+    } else if (from === 2) {
+      var pin = getPin();
+      if (pin.length !== 6) { showErr(2, 'Please enter all 6 digits of your security PIN.'); return; }
+      if (!/^\d{6}$/.test(pin)) { showErr(2, 'PIN must be 6 numbers only.'); return; }
+      showStep(3);
+    } else if (from === 3) {
+      showStep(4);
+    }
+  }
+
+  function skipStep(from) {
+    hideErr(from);
+    if (from === 3) showStep(4);
+  }
+
+  // ── PIN ──────────────────────────────────────────────────
+  function getPin() {
+    var pin = '';
+    for (var i = 1; i <= 6; i++) {
+      var el = document.getElementById('p' + i);
+      if (el) pin += el.value;
+    }
+    return pin;
+  }
+
+  function hashPin(pin) {
+    // Must match settings hashPin exactly
+    var salt = 'forgeai_pin_';
+    var str = salt + pin;
+    var hash = 0;
+    for (var i = 0; i < str.length; i++) {
+      var char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return hash.toString(36);
+  }
+
+  // Auto-advance PIN inputs
+  document.addEventListener('input', function(e) {
+    if (!e.target.classList.contains('pin-input')) return;
+    var id = e.target.id;
+    var num = parseInt(id.replace('p', ''));
+    if (e.target.value && num < 6) {
+      var next = document.getElementById('p' + (num + 1));
+      if (next) next.focus();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (!e.target.classList.contains('pin-input')) return;
+    if (e.key === 'Backspace' && !e.target.value) {
+      var id = e.target.id;
+      var num = parseInt(id.replace('p', ''));
+      if (num > 1) {
+        var prev = document.getElementById('p' + (num - 1));
+        if (prev) { prev.value = ''; prev.focus(); }
+      }
+    }
+  });
+
+  // ── PLATFORM ─────────────────────────────────────────────
+  function selectPlatform(el) {
+    document.querySelectorAll('.plat-btn').forEach(function(b) { b.classList.remove('selected'); });
+    el.classList.add('selected');
+    SELECTED_PLATFORM = el.getAttribute('data-platform');
+  }
+
+  // ── FINISH ───────────────────────────────────────────────
+  async function finish(skip) {
+    hideErr(4);
+
+    var siteUrl = '';
+    if (!skip) {
+      siteUrl = document.getElementById('first-site-url').value.trim();
+      if (!siteUrl) { showErr(4, 'Please enter a site URL or click Skip.'); return; }
+      if (!siteUrl.startsWith('http')) siteUrl = 'https://' + siteUrl;
+    }
+
+    // Show loading — hide top logo so only loading screen logo shows
+    document.querySelectorAll('.step').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById('progress-bar').style.display = 'none';
+    var logoWrap = document.querySelector('.logo-wrap');
+    if (logoWrap) logoWrap.style.display = 'none';
+    var loadingScreen = document.getElementById('loading-screen');
+    loadingScreen.classList.add('active');
+
+    var bar = document.getElementById('loading-bar');
+    var loadingText = document.getElementById('loading-text');
+
+    function setProgress(pct, text) {
+      bar.style.width = pct + '%';
+      if (text) loadingText.textContent = text;
+    }
+
+    try {
+      setProgress(10, 'Saving your profile...');
+      await new Promise(function(r) { setTimeout(r, 300); });
+
+      // Collect all data
+      var agencyName = document.getElementById('agency-name').value.trim();
+      var yourName = document.getElementById('your-name').value.trim();
+      var role = document.getElementById('your-role').value;
+      var website = document.getElementById('agency-website').value.trim();
+      var phone = document.getElementById('agency-phone').value.trim();
+      var reportEmail = document.getElementById('report-email').value.trim();
+      var siteName = skip ? '' : (document.getElementById('first-site-name').value.trim());
+      var pin = getPin();
+      var pinHash = pin ? hashPin(pin) : null;
+      var termsAgreedAt = IS_GOOGLE ? new Date().toISOString() : (USER.user_metadata && USER.user_metadata.terms_agreed_at) || new Date().toISOString();
+
+      // Save all to user_metadata
+      var currentMeta = USER.user_metadata || {};
+      await sb.auth.updateUser({
+        data: {
+          ...currentMeta,
+          agency_name: agencyName,
+          your_name: yourName,
+          role: role,
+          agency_phone: phone,
+          agency_website: website,
+          terms_agreed_at: termsAgreedAt,
+          onboarding_complete: true,
+          forge_settings: {
+            ...(currentMeta.forge_settings || {}),
+            pin_hash: pinHash,
+            agency_phone: phone,
+            agency_website: website,
+            report_email: reportEmail,
+            report_agency_name: agencyName,
+            onboarding_role: role
+          }
+        }
+      });
+
+      setProgress(40, 'Profile saved...');
+      await new Promise(function(r) { setTimeout(r, 300); });
+
+      // Get agency token (created during email confirmation)
+      setProgress(55, 'Preparing your account...');
+      var agencyToken = null;
+      var { data: tokenRow } = await sb.from('agency_tokens').select('token').eq('user_id', USER.id).maybeSingle();
+      if (tokenRow) {
+        agencyToken = tokenRow.token;
+        console.log('Agency token found:', agencyToken);
+      } else {
+        // Fallback: create it now if missing
+        agencyToken = 'fat_' + USER.id.replace(/-/g,'').slice(0,16) + '_forgeai';
+        await sb.from('agency_tokens').upsert(
+          { user_id: USER.id, token: agencyToken },
+          { onConflict: 'user_id' }
+        );
+        console.log('Agency token created as fallback:', agencyToken);
+        await new Promise(function(r) { setTimeout(r, 1000); });
+      }
+
+      setProgress(65, 'Almost there...');
+      await new Promise(function(r) { setTimeout(r, 200); });
+
+      // Add first site if provided — fire and don't wait
+      if (!skip && siteUrl) {
+        setProgress(80, 'Adding your first site...');
+        try {
+          setProgress(80, 'Adding your site...');
+          // Fire and don't wait — redirect to dashboard immediately so user sees scanning
+          fetch('https://forgeai-wgs.com/api/register-site', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: siteUrl,
+              name: siteName || siteUrl.replace(/https?:\/\//, '').split('/')[0],
+              platform: 'other',
+              token: agencyToken
+            })
+          }).then(function(r) { return r.json(); }).then(function(d) { console.log('Register site result:', d); }).catch(function(e) { console.log('Site register error:', e.message); });
+          setProgress(95, 'Almost done...');
+          await new Promise(function(r) { setTimeout(r, 800); });
+        } catch(e) { console.log('Site register error:', e.message); }
+      }
+
+      setProgress(100, 'All done!');
+      await new Promise(function(r) { setTimeout(r, 600); });
+
+      // Go to dashboard — pass newsite param so dashboard shows scanning banner
+      var dashUrl = 'forge-ai-dashboard.html';
+      if (!skip && siteUrl) dashUrl += '?newsite=1';
+      window.location.href = dashUrl;
+
+    } catch(e) {
+      console.error('Onboarding error:', e.message);
+      // Don't block — go to dashboard anyway
+      window.location.href = 'forge-ai-dashboard.html';
+    }
+  }
+
+  // Expose globals
+  window.nextStep = nextStep;
+  window.skipStep = skipStep;
+  window.selectPlatform = selectPlatform;
+  window.finish = finish;
+})();
+
+
+function openLegal(type) {
+  document.getElementById('legal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  var isTerms = type === 'terms';
+  document.getElementById('legal-modal-title').textContent = isTerms ? 'Terms of Service' : 'Privacy Policy';
+  document.getElementById('legal-terms-content').style.display = isTerms ? 'block' : 'none';
+  document.getElementById('legal-privacy-content').style.display = isTerms ? 'none' : 'block';
+}
+function closeLegalBtn() {
+  document.getElementById('legal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeLegal(e) {
+  if (e.target.id === 'legal-overlay') closeLegalBtn();
+}
+window.openLegal = openLegal;
+window.closeLegalBtn = closeLegalBtn;
+window.closeLegal = closeLegal;
+</script>
+
+<!-- Legal Modals -->
+<div class="legal-overlay" id="legal-overlay" onclick="closeLegal(event)">
+  <div class="legal-modal">
+    <div class="legal-modal-head">
+      <h3 id="legal-modal-title">Terms of Service</h3>
+      <button class="legal-modal-close" onclick="closeLegalBtn()">✕</button>
+    </div>
+    <div class="legal-modal-body">
+      <div id="legal-terms-content"><div class="page-title">Terms of Service</div>
+    <div class="page-sub">Last updated: June 2026 · Effective immediately upon account creation</div>
+
+    <div class="section">
+      <div class="section-num">01</div>
+      <div class="section-title">What Forge AI Is</div>
+      <div class="section-body">Forge AI is a website intelligence platform built by Werdel Global Systems that scans and monitors client websites for SEO, performance, mobile, UX, and maintenance issues. We provide AI-powered analysis, recommendations, and automated fixes. For connected WordPress sites, Forge AI can automatically fix issues like missing meta descriptions, page titles, and image alt text using AI. For all platforms, we provide daily automated scanning, email alerts when scores drop, and white label reports for your clients. We provide analysis and recommendations — we do not guarantee specific results or search engine rankings.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">02</div>
+      <div class="section-title">Your Account</div>
+      <div class="section-body">You are responsible for keeping your login credentials and security PIN secure. One account is permitted per agency. You must be 13 years of age or older to use Forge AI. By creating an account you confirm that you meet this requirement and that the information you provide is accurate.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">03</div>
+      <div class="section-title">What You Can Do</div>
+      <div class="section-body">You may use Forge AI to monitor your own websites or your clients' websites. You may generate white label reports branded with your agency name. You may connect platforms — WordPress, Webflow, Wix, Squarespace — that you own or have explicit permission to connect on behalf of a client.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">04</div>
+      <div class="section-title">What You Cannot Do</div>
+      <div class="section-body">You may not share your account with others or allow unauthorized access. You may not use Forge AI to scan websites you do not own or do not have permission to scan. You may not attempt to reverse engineer, copy, or resell the Forge AI platform or any part of it. You may not use Forge AI for any unlawful purpose.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">05</div>
+      <div class="section-title">Auto-Fix</div>
+      <div class="section-body">By enabling auto-fix on a connected WordPress site you give Forge AI explicit permission to automatically modify certain website elements including meta descriptions, page titles, and image alt text. You are responsible for reviewing all changes made by auto-fix. Forge AI is not liable for any unintended consequences of auto-fix modifications. You can disable auto-fix at any time from your dashboard.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">06</div>
+      <div class="section-title">Payments</div>
+      <div class="section-body">Paid subscriptions are billed monthly. Cancellations take effect at the end of the current billing period — you will retain access until then. We do not offer refunds for partial months. Prices may change with 30 days notice by email.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">07</div>
+      <div class="section-title">Our Liability</div>
+      <div class="section-body">Forge AI is provided as-is without warranty of any kind. We are not liable for any losses, damages, or negative outcomes resulting from acting on our recommendations, scan results, or auto-fix changes. Website scanning and AI-powered fixes are tools to assist you — the final responsibility for any changes to a website rests with you.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">08</div>
+      <div class="section-title">Your Data</div>
+      <div class="section-body">You own your data. We do not sell it, share it, or use it for any purpose other than providing the Forge AI service. You can delete your account and all associated data at any time from Settings.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">09</div>
+      <div class="section-title">Changes to These Terms</div>
+      <div class="section-body">We may update these terms from time to time. When we do we will notify you by email at least 14 days before changes take effect. Continued use of Forge AI after that date constitutes acceptance of the updated terms.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.7">
+      Questions about these terms? Contact us at <a href="mailto:support@forgeai-wgs.com" class="legal-link">support@forgeai-wgs.com</a><br>
+      See also our <a href="forge-ai-privacy.html" class="legal-link">Privacy Policy</a>
+    </div></div>
+      <div id="legal-privacy-content" style="display:none"><div class="page-title">Privacy Policy</div>
+    <div class="page-sub">Last updated: June 2026 · We keep this simple and honest.</div>
+
+    <div class="section">
+      <div class="section-num">01</div>
+      <div class="section-title">What We Collect</div>
+      <div class="section-body">When you create an account and use Forge AI we collect the following information:
+        <br><br>
+        • Your email address and agency name<br>
+        • Website URLs you add to your account<br>
+        • Scan results and scores for those websites<br>
+        • Your notification and settings preferences<br>
+        • Basic usage data such as when you log in and run scans
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">02</div>
+      <div class="section-title">How We Use It</div>
+      <div class="section-body">We use your data exclusively to provide the Forge AI service — to run scans, send you email alerts when site scores drop, store your results, and improve the product over time. We do not use your data for advertising, profiling, or any purpose unrelated to running Forge AI.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">03</div>
+      <div class="section-title">How We Store It</div>
+      <div class="section-body">All data is stored securely in Supabase with row-level security enabled. This means your data is completely isolated from other users — no other Forge AI user can read or access your sites, scan results, or account information.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">04</div>
+      <div class="section-title">Third Party Services</div>
+      <div class="section-body">To provide Forge AI we use a small number of trusted third party services. We only share what is strictly necessary for each service to function.
+        <div class="service-list">
+          <div class="service-item">
+            <div>
+              <div class="service-name">Supabase</div>
+              <div class="service-desc">Database and authentication. Stores your account data, site data, and scan results securely.</div>
+            </div>
+          </div>
+          <div class="service-item">
+            <div>
+              <div class="service-name">Anthropic (Claude AI)</div>
+              <div class="service-desc">Powers the AI scanning engine and auto-fix recommendations. Website content is sent to Claude for analysis. No personal user data is shared.</div>
+            </div>
+          </div>
+          <div class="service-item">
+            <div>
+              <div class="service-name">Google PageSpeed API</div>
+              <div class="service-desc">Used to measure website performance metrics like LCP, CLS, and TBT. Only the website URL is shared.</div>
+            </div>
+          </div>
+          <div class="service-item">
+            <div>
+              <div class="service-name">Resend</div>
+              <div class="service-desc">Used to send email alerts when a site's score drops. Only your email address is shared.</div>
+            </div>
+          </div>
+          <div class="service-item">
+            <div>
+              <div class="service-name">Stripe</div>
+              <div class="service-desc">Handles payment processing for paid plans. We never store your card details — Stripe handles all payment data.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">05</div>
+      <div class="section-title">Auto-Fix Data</div>
+      <div class="section-body">When auto-fix is enabled on a WordPress site, Forge AI reads and writes page content including meta tags, titles, and image attributes via the Forge AI WordPress plugin. This content is sent to Anthropic's Claude AI to generate appropriate fixes. No personal user data from your client sites is stored beyond what is needed to perform and log the fix.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">06</div>
+      <div class="section-title">What We Don't Do</div>
+      <div class="section-body">We never sell your data. We never share it with advertisers. We never use your client website data to train AI models. We never access your account without your permission.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">07</div>
+      <div class="section-title">Cookies</div>
+      <div class="section-body">We use session cookies for authentication only — to keep you logged in. We do not use tracking cookies, advertising cookies, or any third party analytics cookies.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">08</div>
+      <div class="section-title">Your Rights</div>
+      <div class="section-body">You can delete your account and all associated data at any time from the Settings page. If you need help with a full data export or deletion request email us at <a href="mailto:privacy@forgeai-wgs.com" class="legal-link">privacy@forgeai-wgs.com</a> and we will respond within 5 business days.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">09</div>
+      <div class="section-title">Children</div>
+      <div class="section-body">Forge AI is not intended for anyone under the age of 13. If you believe a child under 13 has created an account please contact us at <a href="mailto:privacy@forgeai-wgs.com" class="legal-link">privacy@forgeai-wgs.com</a> and we will delete the account immediately.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-num">10</div>
+      <div class="section-title">Changes to This Policy</div>
+      <div class="section-body">If we make material changes to this privacy policy we will notify you by email at least 14 days before they take effect.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.7">
+      Privacy questions? Contact us at <a href="mailto:privacy@forgeai-wgs.com" class="legal-link">privacy@forgeai-wgs.com</a><br>
+      See also our <a href="forge-ai-terms.html" class="legal-link">Terms of Service</a>
+    </div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
