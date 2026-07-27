@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI — White Label Reports</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root {
+  --bg: #09090f; --sidebar: #111117; --surface: #111117; --surface2: #17171f;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --text: #f0f0f5; --text2: #a0a0b0; --muted: #606070; --muted2: #9090a8;
+  --accent: #FF883F; --accent2: #ff6b20;
+  --green: #22c97a; --red: #ff4d4d; --yellow: #f5a623; --blue: #4d9fff;
+  --font: 'Inter', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --sidebar-width: 220px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* ── LAYOUT ── */
+.layout { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar { width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; overflow-y: auto; }
+.sidebar-logo { display: flex; align-items: center; justify-content: center; padding: 22px 18px 18px; border-bottom: 1px solid var(--border); text-decoration: none; }
+.sidebar-nav { flex: 1; padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; color: var(--muted2); text-decoration: none; font-size: 13px; font-weight: 500; transition: all 0.15s; cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: rgba(255,136,63,0.1); color: var(--accent); font-weight: 600; }
+.nav-item-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+.sidebar-bottom { padding: 10px 10px 14px; border-top: 1px solid var(--border); }
+.agency-info { padding: 8px 12px; margin-bottom: 4px; }
+.agency-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+.agency-name-text { font-size: 13px; font-weight: 600; color: var(--text2); }
+.plan-badge { display: inline-flex; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; font-family: var(--mono); margin-top: 4px; }
+.plan-badge.free { background: rgba(107,107,120,.15); color: var(--muted2); }
+.plan-badge.starter { background: rgba(77,159,255,.12); color: var(--blue); }
+.plan-badge.agency { background: rgba(34,201,122,.12); color: var(--green); }
+.plan-badge.enterprise { background: rgba(255,107,53,.12); color: var(--accent); }
+
+/* ── MAIN ── */
+.main { margin-left: var(--sidebar-width); flex: 1; padding: 36px 40px; }
+.page-header { margin-bottom: 28px; }
+.page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 5px; }
+.page-sub { font-size: 13px; color: var(--muted2); }
+
+/* ── GRID ── */
+.report-grid { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+
+/* ── CARDS ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin-bottom: 14px; }
+.card-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 18px; }
+
+/* ── FORM ── */
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field label { font-size: 12px; font-weight: 600; color: var(--text2); display: block; margin-bottom: 6px; }
+.field input, .field select, .field textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: var(--font); font-size: 13px; outline: none; transition: border-color 0.15s; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+.field input::placeholder, .field textarea::placeholder { color: var(--muted); }
+.field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+.field select { cursor: pointer; }
+
+/* ── COLOR ROW ── */
+.color-row { display: flex; gap: 8px; align-items: center; }
+.color-row input[type="color"] { width: 42px; height: 38px; border: 1px solid var(--border2); border-radius: 8px; background: var(--surface2); cursor: pointer; padding: 3px; }
+
+/* ── BUTTONS ── */
+.btn-row { display: flex; gap: 8px; margin-top: 4px; }
+.btn-primary { background: var(--accent); color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-ghost { background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); padding: 10px 18px; border-radius: 8px; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+/* ── PREVIEW PANEL ── */
+.preview-wrap { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 32px rgba(0,0,0,0.4); position: sticky; top: 24px; }
+.preview-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+.preview-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.preview-badge { font-size: 10px; background: rgba(34,201,122,.1); color: var(--green); padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+.preview-body { max-height: calc(100vh - 180px); overflow-y: auto; }
+.preview-body::-webkit-scrollbar { width: 4px; }
+.preview-body::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+.report-history-card {
+  background: #111117;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: border-color 0.15s;
+}
+.report-history-card:hover { border-color: rgba(255,255,255,0.12); }
+.report-history-score {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+.report-history-info { flex: 1; min-width: 0; }
+.report-history-site { font-size: 13px; font-weight: 600; color: #f0f0f5; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.report-history-client { font-size: 11px; color: #9090a8; margin-bottom: 2px; }
+.report-history-date { font-size: 11px; color: #606070; font-family: 'JetBrains Mono', monospace; }
+
+</style>
+</head>
+<body>
+
+<div id="auth-check" style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+  <div style="text-align:center">
+    <div style="width:36px;height:36px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 14px"></div>
+    <div style="font-size:13px;color:var(--muted)">Loading...</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+              <aside class="sidebar">
+      <a href="forge-ai-dashboard.html" class="sidebar-logo">
+        <img src="Powered by Werdel Global Systems.png" alt="Forge AI" style="height:80px;width:auto;object-fit:contain;mix-blend-mode:screen;" onerror="this.style.display='none'">
+      </a>
+      <nav class="sidebar-nav">
+      <a class="nav-item" href="forge-ai-dashboard.html"><span class="nav-item-icon">⚡</span> Dashboard</a>
+      <a class="nav-item active" href="forge-ai-report.html"><span class="nav-item-icon">📄</span> Reports</a>
+      <a class="nav-item" id="alerts-nav" href="forge-ai-dashboard.html#alerts"><span class="nav-item-icon">🔔</span> Alerts</a>
+      <a class="nav-item" id="connections-nav" style="display:none" href="forge-ai-dashboard.html#connections"><span class="nav-item-icon">🔗</span> Connections</a>
+      <a class="nav-item" id="team-nav" style="display:none" href="forge-ai-team.html"><span class="nav-item-icon">👥</span> Team</a>
+      <a class="nav-item" id="agent-nav" href="forge-ai-agent.html"><span class="nav-item-icon">🤖</span> Forge Agent</a>
+      <a class="nav-item" id="billing-nav" href="forge-ai-billing.html"><span class="nav-item-icon">💳</span> Billing</a>
+      <a class="nav-item" id="settings-nav" href="forge-ai-settings.html"><span class="nav-item-icon">⚙️</span> Settings</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div style="padding:12px 10px">
+          <div style="font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Agency</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)" id="sb-agency-name">—</div>
+          <div style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;background:rgba(107,107,120,0.15);color:#70708a" id="sb-plan-badge">Free</div>
+        </div>
+        <button class="nav-item" onclick="doSignOut()" style="color:var(--muted2);width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit">
+          <span class="nav-item-icon">→</span> Sign out
+        </button>
+      </div>
+    </aside>
+
+  <!-- MAIN -->
+  <main class="main" style="padding:32px;flex:1">
+    <div class="page-header" style="margin-bottom:24px">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.03em;margin-bottom:4px">Reports</div>
+      <div style="font-size:13px;color:var(--muted2)">Generate professional client reports powered by real scan data and Tesseract.</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start">
+
+      <!-- Left Controls -->
+      <div>
+
+        <!-- Site Selection -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;font-family:var(--mono)">Select Site</div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block">Site</label>
+            <select id="site-select" onchange="loadSiteDataAnimated()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color 0.2s;cursor:pointer" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+              <option value="">— Choose a site —</option>
+            </select>
+          </div>
+          <div id="site-info" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:8px">
+              <div>
+                <div style="font-size:12px;font-weight:600" id="site-info-name">—</div>
+                <div style="font-size:11px;color:var(--muted2);font-family:var(--mono)" id="site-info-url">—</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:22px;font-weight:800" id="site-info-score">—</div>
+                <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">/100</div>
+              </div>
+            </div>
+            <div id="client-info-row" style="display:none;font-size:11px;color:var(--muted2);margin-bottom:4px">
+              Client: <span id="client-info-name" style="color:var(--text2)">—</span> · <span id="client-info-email" style="color:var(--text2)">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agency Branding -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;font-family:var(--mono)">Agency Branding</div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block">Agency Name</label>
+            <input id="agency-name" placeholder="Your Agency Name" oninput="updatePreview()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block">Tagline (optional)</label>
+            <input id="agency-tagline" placeholder="Website experts for growing businesses" oninput="updatePreview()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block">Brand Color</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:36px;height:36px;border-radius:8px;border:2px solid var(--border2);overflow:hidden;flex-shrink:0">
+                <input type="color" id="brand-color" value="#FF883F" oninput="syncColorFromPicker()" style="width:100%;height:100%;border:none;cursor:pointer;padding:0">
+              </div>
+              <input id="brand-color-hex" value="#FF883F" oninput="syncColorFromHex()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
+            </div>
+          </div>
+          <div style="margin-bottom:0">
+            <label style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block">Client Name</label>
+            <input id="client-name" placeholder="Client or company name" oninput="updatePreview()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          </div>
+        </div>
+
+        <!-- Executive Summary -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;font-family:var(--mono)">Executive Summary</div>
+          <div style="background:rgba(100,160,255,0.06);border:1px solid rgba(100,160,255,0.15);border-radius:10px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+            <span style="font-size:18px;color:#7eb8ff;flex-shrink:0">⬡</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:600;color:#7eb8ff;margin-bottom:2px">Generate with Tesseract</div>
+              <div style="font-size:11px;color:var(--muted2)">AI writes a professional client summary</div>
+            </div>
+            <button id="generate-btn" onclick="generateSummary()" style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:var(--font);border:1px solid rgba(100,160,255,0.25);background:rgba(100,160,255,0.1);color:#7eb8ff;white-space:nowrap">Generate</button>
+          </div>
+          <textarea id="report-summary" placeholder="Select a site and click Generate, or write your own..." oninput="updatePreview()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;resize:vertical;min-height:100px;line-height:1.5"></textarea>
+        </div>
+
+        <!-- Export -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;font-family:var(--mono)">Export</div>
+          <div id="status-msg" style="display:none;font-size:12px;padding:8px 12px;border-radius:7px;margin-bottom:10px"></div>
+          <button onclick="downloadReport()" style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:var(--accent);border:none;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);margin-bottom:8px">⬇ Download Report</button>
+          <button id="send-btn" onclick="sendReport()" style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:rgba(34,201,122,0.1);border:1px solid rgba(34,201,122,0.25);color:var(--green);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);margin-bottom:6px">✉ Send to Client</button>
+          <div id="send-hint" style="font-size:11px;color:var(--muted2);text-align:center">Add a client email in the dashboard to enable sending</div>
+        </div>
+      </div>
+
+      <!-- Right: Live Preview -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:sticky;top:20px">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-family:var(--mono)">Live Preview</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="window.print()" style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:var(--font);border:1px solid var(--border2);background:var(--surface2);color:var(--text2)">Print</button>
+            <button onclick="downloadReport()" style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:var(--font);border:1px solid rgba(255,136,63,0.3);background:rgba(255,136,63,0.1);color:var(--accent)">Download</button>
+          </div>
+        </div>
+        <div id="report-preview" style="padding:0;background:#f8f8f8;min-height:600px;overflow-y:auto;max-height:80vh">
+          <div style="display:flex;align-items:center;justify-content:center;height:300px;color:#999;font-size:13px;font-family:'Inter',sans-serif">Select a site to generate a report preview</div>
+        </div>
+      </div>
+
+    </div>
+  
+    <!-- Report History Section -->
+    <div style="margin-top:32px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#f0f0f5;letter-spacing:-0.02em">Report History</div>
+          <div style="font-size:12px;color:#9090a8;margin-top:2px">All reports sent to clients</div>
+        </div>
+      </div>
+      <div id="report-history-loading" style="text-align:center;padding:32px;color:#606070;font-size:13px">Loading report history...</div>
+      <div id="report-history-list" style="display:none"></div>
+      <div id="report-history-empty" style="display:none;text-align:center;padding:32px;color:#606070;font-size:13px">No reports sent yet. Send your first report above.</div>
+    </div>
+
+</main>
+</div>
+</div>
+
+<script>
+const SUPA_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let currentScanData = null;
+let USER = null;
+
+async function init() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'forge-ai-login.html'; return; }
+    USER = session.user;
+    var roleInfo = await applyNavRole(sb, USER.id || session.user.id, USER.email || session.user.email);
+    var __an = document.getElementById('sb-agency-name'); if(__an) __an.textContent = (USER.user_metadata||session.user.user_metadata||{}).agency_name || (USER.email||session.user.email||'').split('@')[0];
+    var __role = await applyNavRole(sb, USER.id, USER.email);
+    var __an = document.getElementById('sb-agency-name'); if(__an) __an.textContent = USER.user_metadata?.agency_name || USER.email.split('@')[0];
+    document.getElementById('auth-check').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadReportHistory();
+    // Hide AI summary for free plan
+    // Lock branding fields for team members — only owner can change
+    if (roleInfo && roleInfo.isTeamMember) {
+      var agencyNameEl = document.getElementById('agency-name');
+      var agencyTaglineEl = document.getElementById('agency-tagline');
+      if (agencyNameEl) { agencyNameEl.disabled = true; agencyNameEl.style.opacity = '0.5'; agencyNameEl.style.cursor = 'not-allowed'; }
+      if (agencyTaglineEl) { agencyTaglineEl.disabled = true; agencyTaglineEl.style.opacity = '0.5'; agencyTaglineEl.style.cursor = 'not-allowed'; }
+      // Hide save/update buttons for branding
+      var updateBtns = document.querySelectorAll('.update-preview-btn, #save-branding-btn');
+      updateBtns.forEach(function(b) { b.style.display = 'none'; });
+    }
+
+    if (roleInfo && roleInfo.plan === 'free') {
+      var genBtn = document.getElementById('generate-btn');
+      if (genBtn) {
+        genBtn.style.display = 'none';
+        var hint = document.createElement('div');
+        hint.style.cssText = 'font-size:11px;color:#606070;margin-bottom:8px;font-family:monospace';
+        hint.textContent = '⬡ AI summaries available on Starter plan and above';
+        genBtn.parentNode.insertBefore(hint, genBtn);
+      }
+    }
+
+    // Set sidebar agency name
+    const agencyName = USER.user_metadata?.agency_name || 'Your Agency';
+    var sag = document.getElementById('sidebar-agency'); if(sag) sag.textContent = agencyName;
+
+    // Load plan badge
+    try {
+      const { data: sub } = await sb.from('subscriptions').select('plan').eq('user_id', USER.id).maybeSingle();
+      const plan = sub?.plan || 'free';
+      const badge = document.getElementById('plan-badge');
+      const names = { free:'Free', starter:'Starter', agency:'Agency', enterprise:'Enterprise' };
+      badge.textContent = names[plan] || 'Free';
+      badge.className = 'plan-badge ' + plan;
+    } catch(e) {}
+
+    // Load saved settings — prefer user_metadata (saved from Settings page)
+    const forgeSettings = (USER.user_metadata || {}).forge_settings || {};
+    // Clear stale localStorage from previous accounts — always prefer Supabase values
+    if (forgeSettings.report_agency_name) localStorage.removeItem('wl_agency_name');
+    if (forgeSettings.report_tagline !== undefined) localStorage.removeItem('wl_agency_tagline');
+    document.getElementById('agency-name').value = forgeSettings.report_agency_name || localStorage.getItem('wl_agency_name') || agencyName;
+    document.getElementById('agency-tagline').value = forgeSettings.report_tagline || localStorage.getItem('wl_agency_tagline') || '';
+    const savedColor = localStorage.getItem('wl_brand_color') || '#FF883F';
+    document.getElementById('brand-color').value = savedColor;
+    document.getElementById('brand-color-hex').value = savedColor;
+
+    // Load sites for scan selector
+    await loadSites();
+    await loadSitesForReport();
+    var n = forgeSettings.report_agency_name || localStorage.getItem('wl_agency_name') || agencyName; if(document.getElementById('agency-name')) document.getElementById('agency-name').value = n;
+    var t = forgeSettings.report_tagline || localStorage.getItem('wl_agency_tagline') || ''; if(document.getElementById('agency-tagline')) document.getElementById('agency-tagline').value = t;
+    updatePreview();
+
+  } catch(e) {
+    console.error('Init error:', e.message, e);
+    // Only redirect if truly not authenticated
+    const { data: { session: s2 } } = await sb.auth.getSession().catch(() => ({ data: { session: null } }));
+    if (!s2) window.location.href = 'forge-ai-login.html';
+  }
+}
+
+async function loadSites() {
+  try {
+    const { data: sites } = await sb.from('user_sites')
+      .select('name, url, score, last_result, last_scan')
+      .eq('user_id', USER.id)
+      .not('score', 'is', null)
+      .order('last_scan', { ascending: false });
+
+    const select = document.getElementById('scan-select');
+    select.innerHTML = '<option value="">Select a site scan...</option>';
+    if (sites && sites.length > 0) {
+      sites.forEach(function(site, i) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = (site.name || site.url) + ' — Score: ' + site.score;
+        opt.dataset.site = JSON.stringify(site);
+        select.appendChild(opt);
+      });
+    }
+  } catch(e) {
+    console.log('Load sites error:', e.message);
+  }
+}
+
+function loadScan() {
+  const select = document.getElementById('scan-select');
+  const selected = select.options[select.selectedIndex];
+  if (!selected || !selected.dataset.site) return;
+
+  const site = JSON.parse(selected.dataset.site);
+  const result = site.last_result || {};
+
+  currentScanData = result;
+  currentScanData.modules = result.modules || {};
+
+  document.getElementById('report-url').value = site.url || '';
+  document.getElementById('report-score').value = site.score || 0;
+  document.getElementById('report-summary').value = result.summary || '';
+
+  if (!document.getElementById('client-name').value) {
+    document.getElementById('client-name').value = site.name || '';
+  }
+
+  updatePreview();
+}
+
+function syncColorFromPicker() {
+  const color = document.getElementById('brand-color').value;
+  document.getElementById('brand-color-hex').value = color;
+  localStorage.setItem('wl_brand_color', color);
+  updatePreview();
+}
+
+function syncColorFromHex() {
+  const hex = document.getElementById('brand-color-hex').value.trim();
+  if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+    document.getElementById('brand-color').value = hex;
+    localStorage.setItem('wl_brand_color', hex);
+  }
+  updatePreview();
+}
+
+function updatePreview() {
+  // Save settings
+  localStorage.setItem('wl_agency_name', document.getElementById('agency-name').value);
+  localStorage.setItem('wl_agency_tagline', document.getElementById('agency-tagline').value);
+
+  const html = generateReportHTML();
+  document.getElementById('report-preview').innerHTML = html;
+}
+
+function generateReportHTML() {
+  const agencyName = document.getElementById('agency-name').value || 'Your Agency';
+  const agencyTagline = document.getElementById('agency-tagline').value || '';
+  const brandColor = document.getElementById('brand-color').value || '#FF883F';
+  const clientName = document.getElementById('client-name').value || 'Client';
+  const reportUrl = document.getElementById('report-url').value || 'https://clientsite.com';
+  const score = parseInt(document.getElementById('report-score').value) || 0;
+  const summary = document.getElementById('report-summary').value || 'This report provides a comprehensive analysis of your website performance across SEO, speed, mobile experience, user experience, and maintenance.';
+  const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const scoreColor = score >= 80 ? '#16a34a' : score >= 60 ? '#d97706' : '#dc2626';
+  const grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'F';
+  const scoreLabel = score >= 90 ? 'Excellent' : score >= 80 ? 'Strong' : score >= 70 ? 'Good' : score >= 60 ? 'Fair' : 'Needs Work';
+
+  const mods = currentScanData?.modules || {};
+
+  function getModScore(key) {
+    const m = mods[key] || (key === 'performance' ? mods['speed'] : null);
+    return m?.score !== undefined ? m.score : Math.round(score * 0.2);
+  }
+
+  function modBar(score, max, color) {
+    const pct = Math.round((score / max) * 100);
+    return `
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:3px"></div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:${color};width:36px;text-align:right;font-family:monospace">${score}/20</div>
+      </div>`;
+  }
+
+  const modules = [
+    { key: 'seo', name: 'SEO & Discoverability' },
+    { key: 'performance', name: 'Performance & Speed' },
+    { key: 'mobile', name: 'Mobile Experience' },
+    { key: 'ux', name: 'UX & Conversion' },
+    { key: 'maintenance', name: 'Maintenance & Security' },
+  ];
+
+  const modulesHtml = modules.map(function(m) {
+    const s = getModScore(m.key);
+    const c = s >= 17 ? '#16a34a' : s >= 13 ? '#d97706' : '#dc2626';
+    const mod = mods[m.key] || (m.key === 'performance' ? mods['speed'] : null) || {};
+    const issues = mod.deductions || mod.issues || [];
+    const patches = mod.patches || [];
+
+    const issuesHtml = issues.slice(0, 3).map(function(issue, i) {
+      const text = typeof issue === 'string' ? issue : (issue.issue || '');
+      const fix = patches[i] || '';
+      return `
+        <div style="padding:8px 0;border-bottom:1px solid #f3f4f6">
+          <div style="font-size:12px;color:#374151;margin-bottom:${fix ? '4px' : '0'}">${text}</div>
+          ${fix ? `<div style="font-size:11px;color:#6b7280;padding-left:10px;border-left:2px solid ${brandColor}">→ ${fix}</div>` : ''}
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:13px;font-weight:700;color:#111827">${m.name}</div>
+        </div>
+        ${modBar(s, 20, c)}
+        ${issuesHtml ? `<div style="margin-top:10px">${issuesHtml}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  // Priority fixes
+  const allPatches = Object.values(mods).flatMap(function(m) { return (m && m.patches) ? m.patches : []; }).slice(0, 5);
+  const fixesHtml = allPatches.length > 0
+    ? allPatches.map(function(fix, i) {
+        return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6">
+          <div style="width:22px;height:22px;background:${brandColor};color:#fff;border-radius:5px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
+          <div style="font-size:12px;color:#374151;line-height:1.5">${fix}</div>
+        </div>`;
+      }).join('')
+    : '<div style="font-size:12px;color:#6b7280;padding:8px 0">No specific fixes identified — site is performing well.</div>';
+
+  return `
+  <div style="font-family:'Helvetica Neue',Arial,sans-serif;color:#111827;background:#fff;min-height:100%">
+
+    <!-- DARK HEADER with brand -->
+    <div style="background:#111827;padding:28px 40px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:20px;font-weight:800;color:${brandColor};letter-spacing:-0.02em">${agencyName}</div>
+        ${agencyTagline ? `<div style="font-size:11px;color:#9ca3af;margin-top:2px">${agencyTagline}</div>` : ''}
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Website Performance Report</div>
+        <div style="font-size:12px;font-weight:600;color:#fff">${clientName}</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:1px">${date}</div>
+      </div>
+    </div>
+
+    <!-- URL BAR -->
+    <div style="background:#f9fafb;border-bottom:1px solid #e5e7eb;padding:10px 40px;font-size:12px;color:#6b7280;font-family:monospace">
+      ${reportUrl}
+    </div>
+
+    <div style="padding:36px 40px">
+
+      <!-- SCORE HERO -->
+      <div style="display:flex;align-items:center;gap:32px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:28px;margin-bottom:32px">
+        <div style="text-align:center;flex-shrink:0">
+          <div style="font-size:72px;font-weight:800;color:${scoreColor};line-height:1;letter-spacing:-0.04em">${score}</div>
+          <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px">out of 100</div>
+          <div style="display:inline-block;margin-top:8px;padding:3px 12px;background:${scoreColor};color:#fff;border-radius:20px;font-size:12px;font-weight:700">Grade ${grade}</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:-0.03em;margin-bottom:4px">${scoreLabel} Performance</div>
+          <div style="font-size:13px;color:#6b7280;line-height:1.7">${summary}</div>
+        </div>
+      </div>
+
+      <!-- MODULE BREAKDOWN -->
+      <div style="margin-bottom:32px">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid ${brandColor}">
+          Module Breakdown
+        </div>
+        ${modulesHtml}
+      </div>
+
+      <!-- PRIORITY FIXES -->
+      <div style="margin-bottom:32px">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid ${brandColor}">
+          Priority Fixes
+        </div>
+        ${fixesHtml}
+      </div>
+
+      <!-- FOOTER -->
+      <div style="padding-top:24px;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:11px;color:#9ca3af">Prepared by ${agencyName} · ${date}</div>
+        <div style="font-size:10px;color:#d1d5db">Powered by Forge AI</div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+function downloadReport() {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Website Report — ${document.getElementById('client-name').value || 'Client'}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{margin:0;padding:0}@media print{body{margin:0}}</style></head><body>${generateReportHTML()}
+
+
+</body></html>`;
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const clientName = document.getElementById('client-name').value || 'client';
+  a.download = `report-${clientName.toLowerCase().replace(/\s/g,'-')}-${new Date().toISOString().split('T')[0]}.html`;
+  a.click();
+
+  // Open print dialog for PDF
+  setTimeout(function() {
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    win.onload = function() { win.print(); };
+  }, 500);
+}
+
+
+init();
+
+// ── SHARED ROLE & PLAN CHECK ─────────────────────────────
+
+
+
+
+
+
+async function applyNavRole(sb, userId, userEmail) {
+  try {
+    var hide = function(id) { var el=document.getElementById(id); if(el) el.style.display='none'; };
+    var show = function(id) { var el=document.getElementById(id); if(el) el.style.display='flex'; };
+    var planBadge = document.getElementById('sb-plan-badge');
+    var agencyEl = document.getElementById('sb-agency-name');
+    var memberRes = await sb.from('team_members').select('role,agency_id').eq('user_id',userId).eq('status','active').maybeSingle();
+    var member = memberRes.data;
+
+    if (member) {
+      // Hide everything first
+      hide('team-nav'); hide('billing-nav'); hide('settings-nav');
+      hide('connections-nav'); hide('agent-nav'); hide('alerts-nav');
+
+      if (member.role === 'manager' || member.role === 'developer') {
+        // Both manager and developer get: alerts, connections, forge agent
+        show('alerts-nav'); show('connections-nav'); show('agent-nav');
+      }
+
+      if (planBadge) { planBadge.textContent = member.role.charAt(0).toUpperCase()+member.role.slice(1); planBadge.style.background='rgba(34,201,122,0.1)'; planBadge.style.color='#22c97a'; }
+      if (agencyEl) agencyEl.textContent = (typeof USER !== 'undefined' && USER && USER.user_metadata?.agency_name) ? USER.user_metadata.agency_name : 'Your Agency';
+      return { isTeamMember: true, role: member.role, plan: 'agency' };
+    }
+
+    var subRes = await sb.from('subscriptions').select('plan,sites_limit').eq('email',userEmail).maybeSingle();
+    var sub = subRes.data;
+    var plan = (sub && sub.plan) ? sub.plan : 'free';
+    var planNames = { free:'Free', starter:'Starter', agency:'Agency', enterprise:'Enterprise' };
+    var planColors = { free:{bg:'rgba(107,107,120,0.15)',color:'#70708a'}, starter:{bg:'rgba(77,159,255,0.12)',color:'#4d9fff'}, agency:{bg:'rgba(34,201,122,0.12)',color:'#22c97a'}, enterprise:{bg:'rgba(255,136,63,0.12)',color:'#FF883F'} };
+    if (planBadge) { planBadge.textContent=planNames[plan]||'Free'; var c=planColors[plan]||planColors.free; planBadge.style.background=c.bg; planBadge.style.color=c.color; }
+    if (agencyEl) agencyEl.textContent = userEmail.split('@')[0];
+
+    hide('alerts-nav'); hide('connections-nav'); hide('team-nav'); hide('agent-nav');
+
+    if (plan === 'free') {
+      // Free plan users can access reports — AI summary is hidden for free plan
+      return { isTeamMember: false, role: 'owner', plan: plan };
+    } else if (plan === 'starter') {
+      show('alerts-nav'); show('connections-nav');
+    } else if (plan === 'agency' || plan === 'enterprise') {
+      show('alerts-nav'); show('connections-nav'); show('team-nav'); show('agent-nav');
+    }
+    window.FORGE_PLAN = plan;
+    return { isTeamMember: false, role: 'owner', plan: plan, siteLimit: (sub && sub.sites_limit) ? sub.sites_limit : 3 };
+  } catch(e) { return { isTeamMember: false, role: 'owner', plan: 'free' }; }
+}
+async function doSignOut() {
+  await sb.auth.signOut();
+  window.location.href = 'forge-ai-login.html';
+}
+
+
+// ── NEW REPORT FUNCTIONS ──────────────────────────────────
+let SITES = [];
+let CURRENT_SITE = null;
+
+async function loadSitesForReport() {
+  try {
+    // For team members, use the agency owner's user_id
+    var reportUserId = USER.id;
+    const memberCheck = await sb.from('team_members').select('agency_id').eq('user_id', USER.id).eq('status', 'active').maybeSingle();
+    if (memberCheck.data && memberCheck.data.agency_id) {
+      reportUserId = memberCheck.data.agency_id;
+    }
+
+    var sitesQuery = sb.from('user_sites')
+      .select('*').eq('user_id', reportUserId).not('score', 'is', null).order('updated_at', { ascending: false });
+
+    // For developers only — filter to assigned sites
+    // Managers see all agency sites
+    var assignedSiteIds = null;
+    if (memberCheck.data && memberCheck.data.agency_id && memberCheck.data.role === 'developer') {
+      const { data: assignments } = await sb.from('site_assignments')
+        .select('site_id').eq('agency_id', reportUserId).eq('user_id', USER.id);
+      if (assignments && assignments.length > 0) {
+        assignedSiteIds = assignments.map(function(a) { return a.site_id; });
+        sitesQuery = sitesQuery.in('site_id', assignedSiteIds);
+      } else {
+        // No assignments — show nothing
+        assignedSiteIds = [];
+        sitesQuery = sitesQuery.in('site_id', ['00000000-0000-0000-0000-000000000000']);
+      }
+    }
+
+    const { data: userSites } = await sitesQuery;
+    // Also filter scheduled sites by assignment
+    var schedQuery = sb.from('scheduled_sites')
+      .select('*').eq('user_id', reportUserId).eq('active', true).not('last_score', 'is', null);
+    if (assignedSiteIds !== null && assignedSiteIds.length > 0) {
+      schedQuery = schedQuery.in('site_id', assignedSiteIds);
+    } else if (assignedSiteIds !== null && assignedSiteIds.length === 0) {
+      schedQuery = schedQuery.in('site_id', ['00000000-0000-0000-0000-000000000000']);
+    }
+    const { data: schedSites } = await schedQuery;
+    const sel = document.getElementById('site-select');
+    if (!sel) return;
+    SITES = [];
+    if (userSites) userSites.forEach(function(s) {
+      SITES.push({ id: s.site_id, name: s.name || s.url, url: s.url, score: s.score, lastResult: s.last_result, scoreHistory: s.score_history || [], lastScan: s.last_scan, clientName: s.client_name || '', clientEmail: s.client_email || '' });
+      var opt = document.createElement('option'); opt.value = s.site_id; opt.textContent = (s.name || s.url) + ' — ' + s.score + '/100'; sel.appendChild(opt);
+    });
+    if (schedSites) schedSites.forEach(function(s) {
+      if (!SITES.find(function(x) { return x.url === s.url; })) {
+        SITES.push({ id: 'sched_' + s.id, name: s.name || s.url, url: s.url, score: s.last_score, lastResult: s.last_result, scoreHistory: [], lastScan: s.last_scanned, clientName: s.client_name || '', clientEmail: s.client_email || '' });
+        var opt = document.createElement('option'); opt.value = 'sched_' + s.id; opt.textContent = (s.name || s.url) + ' — ' + s.last_score + '/100'; sel.appendChild(opt);
+      }
+    });
+  } catch(e) { console.log('Load sites error:', e.message); }
+}
+
+function loadSiteDataAnimated() {
+  // Fade out report content smoothly before loading new site
+  var reportContent = document.getElementById('report-content');
+  if (reportContent) {
+    reportContent.style.transition = 'opacity 0.2s ease';
+    reportContent.style.opacity = '0';
+    setTimeout(function() {
+      loadSiteData();
+      setTimeout(function() {
+        reportContent.style.opacity = '1';
+      }, 150);
+    }, 200);
+  } else {
+    loadSiteData();
+  }
+}
+
+function loadSiteData() {
+  var sel = document.getElementById('site-select');
+  if (!sel || !sel.value) { CURRENT_SITE = null; document.getElementById('site-info').style.display = 'none'; return; }
+  var site = SITES.find(function(s) { return String(s.id) === sel.value; });
+  if (!site) return;
+  CURRENT_SITE = site;
+  document.getElementById('site-info').style.display = 'block';
+  document.getElementById('site-info-name').textContent = site.name || site.url;
+  document.getElementById('site-info-url').textContent = site.url;
+  var scoreEl = document.getElementById('site-info-score');
+  scoreEl.textContent = site.score;
+  scoreEl.style.color = site.score >= 80 ? 'var(--green)' : site.score >= 60 ? 'var(--yellow)' : 'var(--red)';
+  if (site.clientName || site.clientEmail) {
+    document.getElementById('client-info-row').style.display = 'block';
+    document.getElementById('client-info-name').textContent = site.clientName || '—';
+    document.getElementById('client-info-email').textContent = site.clientEmail || '—';
+    document.getElementById('client-name').value = site.clientName || '';
+    var sendBtn = document.getElementById('send-btn');
+    var sendHint = document.getElementById('send-hint');
+    if (sendBtn) sendBtn.disabled = !site.clientEmail;
+    if (sendHint) sendHint.textContent = site.clientEmail ? 'Will send to: ' + site.clientEmail : 'Add a client email in the dashboard to enable sending';
+  } else {
+    document.getElementById('client-info-row').style.display = 'none';
+    document.getElementById('client-name').value = '';
+    var sendBtn = document.getElementById('send-btn');
+    var sendHint = document.getElementById('send-hint');
+    if (sendBtn) sendBtn.disabled = false;
+    if (sendHint) sendHint.textContent = 'Add client info to send a report';
+  }
+  updatePreview();
+}
+
+async function generateSummary() {
+  if (!CURRENT_SITE) { alert('Please select a site first.'); return; }
+  var btn = document.getElementById('generate-btn');
+  btn.textContent = '⬡ Writing...'; btn.disabled = true;
+  try {
+    var site = CURRENT_SITE;
+    var mods = (site.lastResult && site.lastResult.modules) || {};
+    var moduleScores = Object.entries(mods).map(function(e) { return e[0].toUpperCase() + ': ' + (e[1] && e[1].score !== undefined ? e[1].score : '?') + '/20'; }).join(', ');
+    var allD = []; Object.values(mods).forEach(function(m) { if (m && m.deductions) m.deductions.forEach(function(d) { allD.push(d); }); });
+    allD.sort(function(a,b) { return Math.abs(b.points||0) - Math.abs(a.points||0); });
+    var topIssues = allD.slice(0,3).map(function(d) { return d.issue; }).join('; ');
+    var sessForTess = await sb.auth.getSession();
+    var tessSessToken = sessForTess.data.session ? sessForTess.data.session.access_token : '';
+    var tessRes = await fetch('/api/tesseract', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tessSessToken },
+      body: JSON.stringify({ question: 'Write a 3-sentence professional executive summary for a client report for ' + site.name + '. Score: ' + site.score + '/100. ' + (moduleScores ? 'Modules: ' + moduleScores + '.' : '') + ' ' + (topIssues ? 'Top issues: ' + topIssues + '.' : '') + ' Plain English only. No markdown. No JSON. Just 3 sentences.', context: 'Single site report. Return only message text, no cards.', history: [] })
+    });
+    var tessData = await tessRes.json();
+    if (tessData.success && tessData.response && tessData.response.message) {
+      document.getElementById('report-summary').value = tessData.response.message.replace(/\*\*/g, '').replace(/```json[\s\S]*```/g, '').trim();
+      updatePreview();
+    }
+  } catch(e) { console.error('Summary error:', e); }
+  btn.textContent = 'Generate'; btn.disabled = false;
+}
+
+function syncColorFromPicker() { document.getElementById('brand-color-hex').value = document.getElementById('brand-color').value; updatePreview(); }
+function syncColorFromHex() { var h = document.getElementById('brand-color-hex').value; if (/^#[0-9A-Fa-f]{6}$/.test(h)) { document.getElementById('brand-color').value = h; updatePreview(); } }
+
+function updatePreview() {
+  localStorage.setItem('wl_agency_name', document.getElementById('agency-name').value);
+  localStorage.setItem('wl_agency_tagline', document.getElementById('agency-tagline').value);
+  document.getElementById('report-preview').innerHTML = generateReportHTML();
+}
+
+function generateReportHTML() {
+  var agencyName = document.getElementById('agency-name').value || 'Your Agency';
+  var agencyTagline = document.getElementById('agency-tagline').value || '';
+  var brandColor = document.getElementById('brand-color').value || '#FF883F';
+  var clientName = document.getElementById('client-name').value || 'Client';
+  var summary = document.getElementById('report-summary').value || '';
+  var date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  var site = CURRENT_SITE;
+  if (!site) return '<div style="display:flex;align-items:center;justify-content:center;height:300px;color:#999;font-size:13px;font-family:Inter,sans-serif">Select a site to generate a report preview</div>';
+  var score = site.score || 0;
+  var scoreColor = score >= 80 ? '#16a34a' : score >= 60 ? '#d97706' : '#dc2626';
+  var grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'F';
+  var scoreLabel = score >= 90 ? 'Excellent' : score >= 80 ? 'Good' : score >= 70 ? 'Needs Attention' : score >= 60 ? 'Poor' : 'Critical';
+  var lastScan = site.lastScan ? new Date(site.lastScan).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : date;
+  var mods = (site.lastResult && site.lastResult.modules) || {};
+  var moduleNames = { seo: 'SEO', performance: 'Performance', mobile: 'Mobile', ux: 'UX & Conversion', maintenance: 'Maintenance' };
+  var modulesHtml = Object.entries(moduleNames).map(function(e) {
+    var key = e[0], name = e[1], mod = mods[key] || {}, s = mod.score !== undefined ? mod.score : Math.round(score * 0.2);
+    var c = s >= 16 ? '#16a34a' : s >= 12 ? '#d97706' : '#dc2626';
+    var pct = Math.round((s/20)*100);
+    var issues = (mod.deductions || []).slice(0,2).map(function(d) { return '<div style="font-size:11px;color:#6b7280;padding:3px 0;padding-left:10px;border-left:2px solid ' + brandColor + ';margin-top:4px">' + (d.issue||'') + '</div>'; }).join('');
+    return '<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><div style="font-size:13px;font-weight:600;color:#111827">' + name + '</div><div style="font-size:13px;font-weight:700;color:' + c + ';font-family:monospace">' + s + '/20</div></div><div style="height:5px;background:#e5e7eb;border-radius:3px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:' + c + ';border-radius:3px"></div></div>' + issues + '</div>';
+  }).join('');
+  var allIssues = []; Object.values(mods).forEach(function(m) { if (m && m.deductions) m.deductions.forEach(function(d) { allIssues.push(d); }); });
+  allIssues.sort(function(a,b) { return Math.abs(b.points||0) - Math.abs(a.points||0); });
+  var topIssuesHtml = allIssues.slice(0,5).map(function(d,i) {
+    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6"><div style="width:20px;height:20px;background:' + brandColor + '20;color:' + brandColor + ';border-radius:5px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (i+1) + '</div><div style="font-size:12px;color:#374151;line-height:1.5">' + (d.issue||'') + '</div></div>';
+  }).join('');
+  var hist = site.scoreHistory || [];
+  var histHtml = hist.length > 1 ? '<div style="margin-top:20px;padding-top:20px;border-top:1px solid #e5e7eb"><div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Score History</div><div style="display:flex;align-items:flex-end;gap:6px;height:60px">' + hist.slice(-6).map(function(h) { var s = h.score !== undefined ? h.score : h; var c = s >= 80 ? '#16a34a' : s >= 60 ? '#d97706' : '#dc2626'; return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:100%;height:' + s + '%;max-height:50px;background:' + c + ';border-radius:3px 3px 0 0;min-height:4px"></div><div style="font-size:9px;color:#6b7280;font-family:monospace">' + s + '</div></div>'; }).join('') + '</div></div>' : '';
+  return '<div style="font-family:Helvetica Neue,Arial,sans-serif;color:#111827;background:#fff">' +
+    '<div style="background:#111827;padding:28px 36px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:20px;font-weight:800;color:' + brandColor + ';letter-spacing:-0.02em">' + agencyName + '</div>' + (agencyTagline ? '<div style="font-size:11px;color:#9ca3af;margin-top:2px">' + agencyTagline + '</div>' : '') + '</div><div style="text-align:right"><div style="font-size:11px;color:#9ca3af;font-family:monospace">WEBSITE HEALTH REPORT</div><div style="font-size:11px;color:#6b7280;font-family:monospace;margin-top:2px">' + date + '</div></div></div>' +
+    '<div style="padding:20px 36px;background:#f9fafb;border-bottom:1px solid #e5e7eb"><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;font-family:monospace;margin-bottom:4px">Prepared for</div><div style="font-size:18px;font-weight:800;color:#111827;margin-bottom:2px">' + clientName + '</div><div style="font-size:12px;color:#6b7280;font-family:monospace">' + site.url + '</div></div>' +
+    '<div style="padding:28px 36px;background:#f9fafb;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:28px"><div style="text-align:center"><div style="font-size:64px;font-weight:900;color:' + scoreColor + ';line-height:1;letter-spacing:-0.05em">' + score + '</div><div style="font-size:11px;color:#9ca3af;font-family:monospace;margin-top:2px">/100</div></div><div style="width:1px;height:60px;background:#e5e7eb"></div><div style="flex:1"><div style="font-size:20px;font-weight:800;color:' + scoreColor + ';margin-bottom:4px">' + scoreLabel + '</div><div style="font-size:13px;color:#6b7280">Last scanned: ' + lastScan + '</div>' + (summary ? '<div style="font-size:13px;color:#374151;line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb">' + summary + '</div>' : '') + '</div><div style="width:56px;height:56px;border-radius:12px;background:' + scoreColor + '18;border:1px solid ' + scoreColor + '40;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:' + scoreColor + ';flex-shrink:0">' + grade + '</div></div>' +
+    '<div style="padding:24px 36px;border-bottom:1px solid #e5e7eb"><div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;font-family:monospace">Score Breakdown</div>' + modulesHtml + histHtml + '</div>' +
+    (topIssuesHtml ? '<div style="padding:24px 36px;border-bottom:1px solid #e5e7eb"><div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;font-family:monospace">Top Issues Found</div>' + topIssuesHtml + '</div>' : '') +
+    '<div style="padding:18px 36px;background:#f9fafb;display:flex;justify-content:space-between"><div style="font-size:11px;color:#9ca3af">' + agencyName + ' · ' + date + '</div><div style="font-size:10px;color:#d1d5db;font-family:monospace">Powered by Forge AI</div></div>' +
+  '</div>';
+}
+
+async function downloadReport() {
+  if (!CURRENT_SITE) { alert('Please select a site first.'); return; }
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Report</title></head><body>' + generateReportHTML() + '</body></html>';
+  var blob = new Blob([html], { type: 'text/html' });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = (CURRENT_SITE.name || 'site').replace(/[^a-z0-9]/gi,'-').toLowerCase() + '-report.html'; a.click();
+}
+
+async function sendReport() {
+  if (!CURRENT_SITE || !CURRENT_SITE.clientEmail) {
+    openClientInfoModal();
+    return;
+  }
+  var btn = document.getElementById('send-btn'); btn.textContent = '⏳ Sending...'; btn.disabled = true;
+  var msg = document.getElementById('status-msg'); msg.style.display = 'none';
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw new Error('Not logged in');
+    var portalRes = await fetch('/api/client-portal', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token }, body: JSON.stringify({ siteUrl: CURRENT_SITE.url, siteName: CURRENT_SITE.name || CURRENT_SITE.url }) });
+    var portalData = await portalRes.json();
+    if (!portalData.success) throw new Error('Portal error');
+    var portalLink = window.location.origin + '/forge-ai-client.html?token=' + portalData.token;
+    var emailRes = await fetch('/api/send-client-report', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token }, body: JSON.stringify({ clientEmail: CURRENT_SITE.clientEmail, clientName: document.getElementById('client-name').value || CURRENT_SITE.clientName || '', siteName: CURRENT_SITE.name || CURRENT_SITE.url, siteUrl: CURRENT_SITE.url, score: CURRENT_SITE.score, grade: CURRENT_SITE.grade || null, siteId: CURRENT_SITE.id || null, userId: session.user.id, portalLink: portalLink, agencyName: document.getElementById('agency-name').value || 'Your Agency', summary: document.getElementById('report-summary').value || '' }) });
+    var emailData = await emailRes.json();
+    if (!emailData.success) throw new Error(emailData.error || 'Failed');
+    msg.textContent = '✓ Report sent to ' + CURRENT_SITE.clientEmail; msg.style.cssText = 'display:block;font-size:12px;padding:8px 12px;border-radius:7px;background:rgba(34,201,122,0.1);border:1px solid rgba(34,201,122,0.2);color:var(--green);margin-bottom:10px';
+  } catch(e) {
+    msg.textContent = 'Error: ' + e.message; msg.style.cssText = 'display:block;font-size:12px;padding:8px 12px;border-radius:7px;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.2);color:var(--red);margin-bottom:10px';
+  }
+  btn.textContent = '✉ Send to Client'; btn.disabled = false;
+}
+
+</script>
+
+
+
+
+<!-- Client Info Modal -->
+<div id="client-info-modal" onclick="if(event.target===this)closeClientInfoModal()" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0);backdrop-filter:blur(0px);transition:all 0.3s cubic-bezier(0.4,0,0.2,1)" id="client-modal-backdrop"></div>
+  <div id="client-modal-sheet" style="position:relative;background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px;width:90%;max-width:420px;transform:scale(0.9) translateY(20px);opacity:0;transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 24px 60px rgba(0,0,0,0.6)">
+    <button onclick="closeClientInfoModal()" style="position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);cursor:pointer;width:28px;height:28px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center">×</button>
+    <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;letter-spacing:-0.02em">Client Information</div>
+    <div style="font-size:13px;color:var(--muted2);margin-bottom:24px">Fill in your client's details to send them the report. This will be saved for next time.</div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Client Name</div>
+      <input id="modal-client-name" type="text" placeholder="e.g. John's Bakery" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;box-sizing:border-box;transition:border-color 0.2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+    </div>
+    <div style="margin-bottom:24px">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Client Email</div>
+      <input id="modal-client-email" type="email" placeholder="client@example.com" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;box-sizing:border-box;transition:border-color 0.2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'" onkeydown="if(event.key==='Enter')saveClientInfoAndSend()">
+    </div>
+    <button onclick="saveClientInfoAndSend()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);transition:opacity 0.15s" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Save & Send Report →</button>
+  </div>
+</div>
+
+<script>
+function openClientInfoModal() {
+  // Pre-fill with existing values
+  var nameInput = document.getElementById('modal-client-name');
+  var emailInput = document.getElementById('modal-client-email');
+  if (CURRENT_SITE) {
+    if (nameInput) nameInput.value = CURRENT_SITE.clientName || '';
+    if (emailInput) emailInput.value = CURRENT_SITE.clientEmail || '';
+  }
+  var modal = document.getElementById('client-info-modal');
+  var sheet = document.getElementById('client-modal-sheet');
+  var backdrop = document.getElementById('client-modal-backdrop');
+  modal.style.display = 'flex';
+  setTimeout(function() {
+    backdrop.style.background = 'rgba(0,0,0,0.6)';
+    backdrop.style.backdropFilter = 'blur(4px)';
+    sheet.style.transform = 'scale(1) translateY(0)';
+    sheet.style.opacity = '1';
+    setTimeout(function() {
+      var emailEl = document.getElementById('modal-client-email');
+      if (emailEl) emailEl.focus();
+    }, 200);
+  }, 10);
+}
+
+function closeClientInfoModal() {
+  var sheet = document.getElementById('client-modal-sheet');
+  var backdrop = document.getElementById('client-modal-backdrop');
+  var modal = document.getElementById('client-info-modal');
+  sheet.style.transform = 'scale(0.9) translateY(20px)';
+  sheet.style.opacity = '0';
+  backdrop.style.background = 'rgba(0,0,0,0)';
+  backdrop.style.backdropFilter = 'blur(0px)';
+  setTimeout(function() { modal.style.display = 'none'; }, 350);
+}
+
+async function saveClientInfoAndSend() {
+  var name = document.getElementById('modal-client-name').value.trim();
+  var email = document.getElementById('modal-client-email').value.trim();
+  if (!email) { document.getElementById('modal-client-email').style.borderColor = 'var(--red)'; return; }
+
+  // Save to user_sites
+  if (CURRENT_SITE) {
+    CURRENT_SITE.clientName = name;
+    CURRENT_SITE.clientEmail = email;
+    try {
+      var { data: { session } } = await sb.auth.getSession();
+      await sb.from('user_sites').update({
+        client_name: name,
+        client_email: email
+      }).eq('url', CURRENT_SITE.url).eq('user_id', session.user.id);
+    } catch(e) { console.log('Save client info error:', e.message); }
+  }
+
+  closeClientInfoModal();
+  setTimeout(sendReport, 400);
+}
+
+
+async function loadReportHistory() {
+  var loading = document.getElementById('report-history-loading');
+  var list = document.getElementById('report-history-list');
+  var empty = document.getElementById('report-history-empty');
+
+  try {
+    var { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+
+    var { data: reports, error } = await sb
+      .from('client_reports')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('sent_at', { ascending: false })
+      .limit(50);
+
+    if (loading) loading.style.display = 'none';
+
+    if (!reports || reports.length === 0) {
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+
+    if (list) {
+      list.style.display = 'block';
+      list.innerHTML = reports.map(function(r) {
+        var score = r.score || 0;
+        var scoreColor = score >= 80 ? '#22c97a' : score >= 60 ? '#f5a623' : '#ff4d4d';
+        var scoreBg = score >= 80 ? 'rgba(34,201,122,0.1)' : score >= 60 ? 'rgba(245,166,35,0.1)' : 'rgba(255,77,77,0.1)';
+        var sentAt = r.sent_at ? new Date(r.sent_at) : null;
+        var daysAgo = sentAt ? Math.floor((Date.now() - sentAt) / 86400000) : null;
+        var dateStr = sentAt ? sentAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+        var timeAgo = daysAgo === null ? '' : daysAgo === 0 ? ' · Today' : daysAgo === 1 ? ' · Yesterday' : ' · ' + daysAgo + ' days ago';
+
+        return '<div class="report-history-card">' +
+          '<div class="report-history-score" style="background:' + scoreBg + ';color:' + scoreColor + '">' + (r.score || '—') + '</div>' +
+          '<div class="report-history-info">' +
+            '<div class="report-history-site">' + (r.site_name || r.site_url || 'Unknown site') + '</div>' +
+            '<div class="report-history-client">Sent to ' + (r.client_name || 'Unknown') + (r.client_email ? ' · ' + r.client_email : '') + '</div>' +
+            '<div class="report-history-date">' + dateStr + timeAgo + '</div>' +
+          '</div>' +
+          (r.grade ? '<div style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;background:' + scoreBg + ';color:' + scoreColor + ';font-family:monospace">' + r.grade + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
+  } catch(e) {
+    if (loading) loading.style.display = 'none';
+    if (empty) { empty.style.display = 'block'; empty.textContent = 'Could not load report history.'; }
+    console.log('Report history error:', e.message);
+  }
+}
+</script>
+
+</body>
+</html>
