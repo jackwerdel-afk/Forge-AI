@@ -1,0 +1,10 @@
+{
+  "name": "forge-ai",
+  "version": "1.0.0",
+  "description": "Forge AI - Website Intelligence System by Werdel Global Systems",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "@sentry/node": "^8.0.0",
+    "node-fetch": "^3.0.0"
+  }
+}
