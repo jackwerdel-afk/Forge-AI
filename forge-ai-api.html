@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="https://js.sentry-cdn.com/dd106e0b26f3052871b6db507d53c4ce.min.js" crossorigin="anonymous"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI — API Reference</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#09090f;--sidebar:#111117;--surface:#111117;--surface2:#17171f;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f0f0f5;--text2:#a0a0b0;--muted:#606070;--muted2:#9090a8;--accent:#FF883F;--accent2:#ff6b20;--green:#22c97a;--red:#ff4d4d;--yellow:#f5a623;--blue:#4d9fff;--font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;--sidebar-width:220px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased;}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:var(--sidebar-width);background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow-y:auto;}
+.sidebar-logo{display:flex;align-items:center;justify-content:center;padding:22px 18px 18px;border-bottom:1px solid var(--border);text-decoration:none;}
+.sidebar-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:2px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--muted2);text-decoration:none;font-size:13px;font-weight:500;transition:all 0.15s;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(255,136,63,0.1);color:var(--accent);font-weight:600;}
+.nav-item-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-bottom{padding:10px 10px 14px;border-top:1px solid var(--border);}
+.main{margin-left:var(--sidebar-width);flex:1;padding:36px 48px;max-width:900px;}
+.back-btn{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border2);color:var(--muted2);padding:7px 14px;border-radius:8px;font-family:var(--font);font-size:13px;cursor:pointer;margin-bottom:24px;transition:all 0.15s;text-decoration:none;}
+.back-btn:hover{color:var(--text);border-color:var(--accent);}
+.page-title{font-size:26px;font-weight:800;letter-spacing:-0.04em;margin-bottom:6px;}
+.page-sub{font-size:14px;color:var(--muted2);margin-bottom:32px;line-height:1.6;}
+
+/* API Key Box */
+.api-key-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:32px;}
+.api-key-label{font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.api-key-value{display:flex;align-items:center;gap:10px;}
+.api-key-token{font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px 14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.copy-btn{background:var(--surface2);border:1px solid var(--border2);color:var(--muted2);padding:8px 14px;border-radius:8px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent);}
+.api-key-note{font-size:12px;color:var(--muted2);margin-top:10px;line-height:1.6;}
+
+/* Endpoints */
+.endpoint-section{margin-bottom:40px;}
+.endpoint-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.method-badge{font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;flex-shrink:0;}
+.method-get{background:rgba(34,201,122,0.1);color:var(--green);}
+.method-post{background:rgba(255,136,63,0.1);color:var(--accent);}
+.endpoint-path{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text);}
+.endpoint-desc{font-size:13px;color:var(--muted2);margin-bottom:14px;line-height:1.6;}
+.plan-badge{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;font-family:var(--mono);background:rgba(34,201,122,0.1);color:var(--green);margin-bottom:14px;}
+
+/* Code blocks */
+.code-block{background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+.code-block-header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);}
+.code-lang{font-size:11px;color:var(--muted2);font-family:var(--mono);}
+.code-copy{background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;font-family:var(--font);padding:2px 6px;border-radius:4px;}
+.code-copy:hover{color:var(--text);}
+pre{padding:16px;overflow-x:auto;font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--text2);}
+.kw{color:var(--accent);}
+.str{color:var(--green);}
+.key{color:var(--blue);}
+.num{color:var(--yellow);}
+.cmt{color:var(--muted);}
+
+/* Params table */
+.params-table{width:100%;border-collapse:collapse;margin-bottom:14px;}
+.params-table th{font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:0.06em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+.params-table td{font-size:12px;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+.params-table tr:last-child td{border-bottom:none;}
+.param-name{font-family:var(--mono);color:var(--accent);font-size:11.5px;}
+.param-type{font-family:var(--mono);color:var(--muted2);font-size:11px;}
+.param-req{color:var(--red);font-size:10px;font-weight:700;}
+.param-opt{color:var(--muted);font-size:10px;}
+
+/* Section labels */
+.section-label{font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+
+/* Rate limit box */
+.rate-box{background:rgba(245,166,35,0.05);border:1px solid rgba(245,166,35,0.2);border-radius:10px;padding:14px 18px;margin-bottom:32px;font-size:13px;color:var(--yellow);line-height:1.6;}
+.base-url-box{background:rgba(255,136,63,0.04);border:1px solid rgba(255,136,63,0.2);border-radius:10px;padding:14px 18px;margin-bottom:28px;}
+.base-url-label{font-size:11px;color:var(--muted2);margin-bottom:6px;}
+.base-url-val{font-family:var(--mono);font-size:13px;color:var(--accent);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px;}
+</style>
+</head>
+<body>
+<div id="auth-check" style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+  <div style="text-align:center">
+    <div style="width:36px;height:36px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 14px"></div>
+    <div style="font-size:13px;color:var(--muted)">Loading...</div>
+  </div>
+</div>
+<div id="app" style="display:none">
+<div class="layout">
+  <aside class="sidebar">
+    <a href="forge-ai-dashboard.html" class="sidebar-logo">
+      <img src="Powered by Werdel Global Systems.png" alt="Forge AI" style="height:80px;width:auto;object-fit:contain;mix-blend-mode:screen;" onerror="this.style.display='none'">
+    </a>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="forge-ai-dashboard.html"><span class="nav-item-icon">⚡</span> Dashboard</a>
+      <a class="nav-item" href="forge-ai-report.html"><span class="nav-item-icon">📄</span> Reports</a>
+      <a class="nav-item" id="alerts-nav" style="display:none" href="forge-ai-dashboard.html#alerts"><span class="nav-item-icon">🔔</span> Alerts</a>
+      <a class="nav-item" id="connections-nav" style="display:none" href="forge-ai-dashboard.html#connections"><span class="nav-item-icon">🔗</span> Connections</a>
+      <a class="nav-item" id="team-nav" style="display:none" href="forge-ai-team.html"><span class="nav-item-icon">👥</span> Team</a>
+      <a class="nav-item" id="agent-nav" style="display:none" href="forge-ai-agent.html"><span class="nav-item-icon">🤖</span> Forge Agent</a>
+      <a class="nav-item" id="billing-nav" href="forge-ai-billing.html"><span class="nav-item-icon">💳</span> Billing</a>
+      <a class="nav-item active" id="settings-nav" href="forge-ai-settings.html"><span class="nav-item-icon">⚙️</span> Settings</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div style="padding:12px 10px">
+        <div style="font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Agency</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)" id="sb-agency-name">—</div>
+        <div style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;background:rgba(107,107,120,0.15);color:#70708a" id="sb-plan-badge">Free</div>
+      </div>
+      <button class="nav-item" onclick="doSignOut()" style="color:var(--muted2);width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit">
+        <span class="nav-item-icon">→</span> Sign out
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <a href="forge-ai-settings.html" class="back-btn">← Back to Settings</a>
+    <div class="page-title">API Reference</div>
+    <div class="page-sub">Integrate Forge AI into your own tools and workflows. Trigger scans, pull site health data, and send reports programmatically.</div>
+
+    <!-- API Key -->
+    <div class="api-key-box">
+      <div class="api-key-label">Your API Token</div>
+      <div class="api-key-value">
+        <div class="api-key-token" id="api-token">Loading...</div>
+        <button class="copy-btn" onclick="copyToken()">Copy</button>
+      </div>
+      <div class="api-key-note">Use this token in the <code style="background:var(--surface);border:1px solid var(--border2);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--accent)">Authorization</code> header of every request. Keep it secret — it has full access to your agency account.</div>
+    </div>
+
+    <!-- Base URL -->
+    <div class="base-url-box">
+      <div class="base-url-label">Base URL</div>
+      <div class="base-url-val">https://forgeai-wgs.com/api/forge-api</div>
+    </div>
+
+    <!-- Plan requirement -->
+    <div class="rate-box">
+      ⚡ API access is available on the <strong>Agency</strong> and <strong>Enterprise</strong> plans. All endpoints require a valid API token in the Authorization header. Rate limit: <strong>100 requests per hour</strong>.
+    </div>
+
+    <!-- Authentication -->
+    <div class="endpoint-section">
+      <div style="font-size:16px;font-weight:700;margin-bottom:12px;letter-spacing:-0.02em">Authentication</div>
+      <div class="endpoint-desc">Pass your API token as a Bearer token in the Authorization header of every request.</div>
+      <div class="code-block">
+        <div class="code-block-header"><span class="code-lang">http</span></div>
+        <pre>Authorization: Bearer fat_xxxxxxxxxxxxxxxx_forgeai</pre>
+      </div>
+    </div>
+
+    <!-- GET /sites -->
+    <div class="endpoint-section">
+      <div class="endpoint-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/sites</span>
+      </div>
+      <div class="endpoint-desc">Returns all sites in your agency account with their current health scores.</div>
+      <div class="section-label">Example Request</div>
+      <div class="code-block">
+        <div class="code-block-header"><span class="code-lang">curl</span></div>
+        <pre>curl https://forgeai-wgs.com/api/forge-api/sites \
+  -H <span class="str">"Authorization: Bearer YOUR_TOKEN"</span></pre>
+      </div>
+      <div class="section-label">Example Response</div>
+      <div class="code-block">
+        <div class="code-block-header"><span class="code-lang">json</span></div>
+        <pre>{
+  <span class="key">"success"</span>: <span class="kw">true</span>,
+  <span class="key">"count"</span>: <span class="num">3</span>,
+  <span class="key">"sites"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="str">"abc123"</span>,
+      <span class="key">"name"</span>: <span class="str">"Client Site"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://clientsite.com"</span>,
+      <span class="key">"platform"</span>: <span class="str">"wordpress"</span>,
+      <span class="key">"score"</span>: <span class="num">87</span>,
+      <span class="key">"grade"</span>: <span class="str">"B"</span>,
+      <span class="key">"lastScanned"</span>: <span class="str">"2026-07-24T08:00:00Z"</span>,
+      <span class="key">"client"</span>: { <span class="key">"name"</span>: <span class="str">"Jane Smith"</span>, <span class="key">"email"</span>: <span class="str">"jane@client.com"</span> }
+    }
+  ]
+}</pre>
+      </div>
+    </div>
+
+    <!-- GET /sites/:url -->
+    <div class="endpoint-section">
+      <div class="endpoint-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/sites/:url</span>
+      </div>
+      <div class="endpoint-desc">Returns detailed health data for a specific site including issues and score history. URL-encode the site URL.</div>
+      <div class="section-label">Example Request</div>
+      <div class="code-block">
+        <div class="code-block-header"><span class="code-lang">curl</span></div>
+        <pre>curl <span class="str">"https://forgeai-wgs.com/api/forge-api/sites/https%3A%2F%2Fclientsite.com"</span> \
+  -H <span class="str">"Authorization: Bearer YOUR_TOKEN"</span></pre>
+      </div>
+      <div class="section-label">Example Response</div>
+      <div class="code-block">
+        <div class="code-block-header"><span class="code-lang">json</span></div>
+        <pre>{
+  <span class="key">"success"</span>: <span class="kw">true</span>,
+  <span class="key">"site"</span>: {
+    <span class="key">"id"</span>: <span class="str">"abc123"</span>,
+    <span class="key">"name"</span>: <span class="str">"Client Site"</span>,
+    <span class="key">"url"</span>: <span class="str">"https://clientsite.com"</span>,
+    <span class="key">"score"</span>: <span class="num">87</span>,
+    <span class="key">"grade"</span>: <span class="str">"B"</span>,
+    <span class="key">"lastScanned"</span>: <span class="str">"2026-07-24T08:00:00Z"</span>,
+    <span class="key">"issues"</span>: [
+      { <span class="key">"type"</span>: <span class="str">"missing_meta"</span>, <span class="key">"severity"</span>: <span class="str">"high"</span>, <span class="key">"description"</span>: <span class="str">"5 pages missing meta descriptions"</span> }
+    ],
+    <span class="key">"scoreHistory"</span>: [
+      { <span class="key">"score"</span>: <span class="num">82</span>, <span class="key">"date"</span>: <span class="str">"2026-07-17T08:00:00Z"</span> },
+      { <span class="key">"score"</span>: <span class="num">87</span>, <span class="key">"date"</span>: <span class="str">"2026-07-24T08:00:00Z"</span> }
+    ]
+  }
+}</pre>
+      </div>
+    </div>
+
+    <!-- POST /scan -->
+    <div class="endpoint-section">
+      <div class="endpoint-header">
+        <span class="method-badge method-post">POST</span>
+        <span class="endpoint-path">/scan</span>
+      </div>
+      <div class="endpoint-desc">Triggers an immediate health scan on a site. Returns 202 Accepted immediately — the scan runs asynchronously and results appear on your dashboard within 1-2 minutes.</div>
+      <div class="section-label">Request Body</div>
+      <table class="params-table">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td><span class="param-req">Required</span></td><td style="color:var(--muted2)">The full URL of the site to scan</td></tr>
+      </table>
+      <div class="section-label">Example Request</div>
+      <div class="code-block">
+        <div class="code-block-header"><span class="code-lang">curl</span></div>
+        <pre>curl -X POST https://forgeai-wgs.com/api/forge-api/scan \
+  -H <span class="str">"Authorization: Bearer YOUR_TOKEN"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"url": "https://clientsite.com"}'</span></pre>
+      </div>
+      <div class="section-label">Example Response</div>
+      <div class="code-block">
+        <div class="code-block-header"><span class="code-lang">json</span></div>
+        <pre>{
+  <span class="key">"success"</span>: <span class="kw">true</span>,
+  <span class="key">"message"</span>: <span class="str">"Scan triggered. Results will be available shortly."</span>,
+  <span class="key">"url"</span>: <span class="str">"https://clientsite.com"</span>
+}</pre>
+      </div>
+    </div>
+
+    <!-- GET /reports -->
+    <div class="endpoint-section">
+      <div class="endpoint-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/reports</span>
+      </div>
+      <div class="endpoint-desc">Returns the last 50 client reports sent from your account.</div>
+      <div class="section-label">Example Request</div>
+      <div class="code-block">
+        <div class="code-block-header"><span class="code-lang">curl</span></div>
+        <pre>curl https://forgeai-wgs.com/api/forge-api/reports \
+  -H <span class="str">"Authorization: Bearer YOUR_TOKEN"</span></pre>
+      </div>
+    </div>
+
+    <!-- POST /report/send -->
+    <div class="endpoint-section">
+      <div class="endpoint-header">
+        <span class="method-badge method-post">POST</span>
+        <span class="endpoint-path">/report/send</span>
+      </div>
+      <div class="endpoint-desc">Sends a white-label health report to a client email address.</div>
+      <div class="section-label">Request Body</div>
+      <table class="params-table">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td><span class="param-name">url</span></td><td><span class="param-type">string</span></td><td><span class="param-req">Required</span></td><td style="color:var(--muted2)">The site URL to report on</td></tr>
+        <tr><td><span class="param-name">clientEmail</span></td><td><span class="param-type">string</span></td><td><span class="param-req">Required</span></td><td style="color:var(--muted2)">Client's email address</td></tr>
+        <tr><td><span class="param-name">clientName</span></td><td><span class="param-type">string</span></td><td><span class="param-opt">Optional</span></td><td style="color:var(--muted2)">Client's name for personalization</td></tr>
+      </table>
+      <div class="section-label">Example Request</div>
+      <div class="code-block">
+        <div class="code-block-header"><span class="code-lang">curl</span></div>
+        <pre>curl -X POST https://forgeai-wgs.com/api/forge-api/report/send \
+  -H <span class="str">"Authorization: Bearer YOUR_TOKEN"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"url":"https://clientsite.com","clientEmail":"jane@client.com","clientName":"Jane"}'</span></pre>
+      </div>
+    </div>
+
+    <!-- Error codes -->
+    <div class="endpoint-section">
+      <div style="font-size:16px;font-weight:700;margin-bottom:12px;letter-spacing:-0.02em">Error Codes</div>
+      <table class="params-table">
+        <tr><th>Code</th><th>Meaning</th></tr>
+        <tr><td><span class="param-name">200</span></td><td style="color:var(--muted2)">Success</td></tr>
+        <tr><td><span class="param-name">202</span></td><td style="color:var(--muted2)">Accepted (async operation started)</td></tr>
+        <tr><td><span class="param-name">400</span></td><td style="color:var(--muted2)">Bad request — missing or invalid parameters</td></tr>
+        <tr><td><span class="param-name">401</span></td><td style="color:var(--muted2)">Unauthorized — invalid or missing token</td></tr>
+        <tr><td><span class="param-name">403</span></td><td style="color:var(--muted2)">Forbidden — plan upgrade required</td></tr>
+        <tr><td><span class="param-name">404</span></td><td style="color:var(--muted2)">Site not found in your account</td></tr>
+        <tr><td><span class="param-name">429</span></td><td style="color:var(--muted2)">Rate limit exceeded — 100 requests per hour</td></tr>
+        <tr><td><span class="param-name">500</span></td><td style="color:var(--muted2)">Internal server error</td></tr>
+      </table>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<script>
+const SUPA_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+let USER = null;
+
+async function initPage() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'forge-ai-login.html'; return; }
+    const { data: { user: serverUser }, error: userErr } = await sb.auth.getUser();
+    if (userErr || !serverUser) { await sb.auth.signOut(); window.location.href = 'forge-ai-login.html'; return; }
+    USER = serverUser;
+    window.USER = USER;
+
+    var roleInfo = await applyNavRole(sb, USER.id, USER.email);
+    var agEl = document.getElementById('sb-agency-name');
+    if (agEl) agEl.textContent = USER.user_metadata?.agency_name || USER.email.split('@')[0];
+
+    // Check plan
+    if (roleInfo && roleInfo.plan !== 'agency' && roleInfo.plan !== 'enterprise' && !roleInfo.isTeamMember) {
+      document.getElementById('api-token').textContent = 'API access requires the Agency or Enterprise plan.';
+      document.getElementById('api-token').style.color = 'var(--red)';
+    } else {
+      // Load agency token
+      let userId = USER.id;
+      if (roleInfo && roleInfo.isTeamMember) {
+        const { data: m } = await sb.from('team_members').select('agency_id').eq('user_id', USER.id).eq('status', 'active').maybeSingle();
+        if (m && m.agency_id) userId = m.agency_id;
+      }
+      const { data: tokenData } = await sb.from('agency_tokens').select('token').eq('user_id', userId).maybeSingle();
+      if (tokenData && tokenData.token) {
+        document.getElementById('api-token').textContent = tokenData.token;
+      } else {
+        document.getElementById('api-token').textContent = 'Token not found. Go to your dashboard to generate one.';
+      }
+    }
+
+    document.getElementById('auth-check').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } catch(e) { console.error('Init error:', e.message); }
+}
+
+function copyToken() {
+  var token = document.getElementById('api-token').textContent;
+  navigator.clipboard.writeText(token).then(function() {
+    var btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    btn.style.color = 'var(--green)';
+    setTimeout(function() { btn.textContent = 'Copy'; btn.style.color = ''; }, 2000);
+  });
+}
+
+async function applyNavRole(sb, userId, userEmail) {
+  try {
+    var hide = function(id) { var el=document.getElementById(id); if(el) el.style.display='none'; };
+    var show = function(id) { var el=document.getElementById(id); if(el) el.style.display='flex'; };
+    var planBadge = document.getElementById('sb-plan-badge');
+    var memberRes = await sb.from('team_members').select('role,agency_id').eq('user_id',userId).eq('status','active').maybeSingle();
+    var member = memberRes.data;
+    if (member) {
+      hide('team-nav'); hide('billing-nav'); hide('settings-nav');
+      hide('connections-nav'); hide('agent-nav'); hide('alerts-nav');
+      if (member.role === 'manager' || member.role === 'developer') { show('alerts-nav'); show('connections-nav'); show('agent-nav'); }
+      if (planBadge) { planBadge.textContent = member.role.charAt(0).toUpperCase()+member.role.slice(1); planBadge.style.background='rgba(34,201,122,0.1)'; planBadge.style.color='#22c97a'; }
+      return { isTeamMember: true, role: member.role, plan: 'agency', agencyId: member.agency_id };
+    }
+    var subRes = await sb.from('subscriptions').select('plan').eq('email',userEmail).maybeSingle();
+    var sub = subRes.data;
+    var plan = (sub && sub.plan) ? sub.plan : 'free';
+    var planNames = { free:'Free', starter:'Starter', agency:'Agency', enterprise:'Enterprise' };
+    var planColors = { free:{bg:'rgba(107,107,120,0.15)',color:'#70708a'}, starter:{bg:'rgba(77,159,255,0.12)',color:'#4d9fff'}, agency:{bg:'rgba(34,201,122,0.12)',color:'#22c97a'}, enterprise:{bg:'rgba(255,136,63,0.12)',color:'#FF883F'} };
+    if (planBadge) { planBadge.textContent=planNames[plan]||'Free'; var c=planColors[plan]||planColors.free; planBadge.style.background=c.bg; planBadge.style.color=c.color; }
+    hide('alerts-nav'); hide('connections-nav'); hide('team-nav'); hide('agent-nav');
+    if (plan === 'starter') { show('alerts-nav'); show('connections-nav'); }
+    else if (plan === 'agency' || plan === 'enterprise') { show('alerts-nav'); show('connections-nav'); show('team-nav'); show('agent-nav'); }
+    return { isTeamMember: false, role: 'owner', plan };
+  } catch(e) { return { isTeamMember: false, role: 'owner', plan: 'free' }; }
+}
+
+async function doSignOut() {
+  await sb.auth.signOut();
+  window.location.href = 'forge-ai-login.html';
+}
+
+initPage();
+</script>
+</body>
+</html>
