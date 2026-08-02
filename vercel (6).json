@@ -1,0 +1,51 @@
+{
+  "version": 2,
+  "crons": [
+    {
+      "path": "/api/scheduled-scan",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/uptime-monitor",
+      "schedule": "*/5 * * * *"
+    }
+  ],
+  "functions": {
+    "api/scheduled-scan.js": {
+      "maxDuration": 300
+    },
+    "api/ghost-intelligence.js": {
+      "maxDuration": 300
+    },
+    "api/agent-deploy.js": {
+      "maxDuration": 300
+    },
+    "api/forge-api.js": {
+      "maxDuration": 30
+    },
+    "api/uptime-monitor.js": {
+      "maxDuration": 60
+    }
+  },
+  "headers": [
+    {
+      "source": "/forge-ai-wordpress-plugin.zip",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/zip"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment; filename=forge-ai-wordpress-plugin.zip"
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/forge-api/(.*)",
+      "dest": "/api/forge-api.js"
+    }
+  ]
+}
