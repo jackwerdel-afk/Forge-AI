@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge Agent — Forge AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09090f;--sidebar:#111117;--surface:#111117;--surface2:#17171f;--surface3:#1e1e28;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#f0f0f5;--text2:#a0a0b0;--muted:#70708a;--muted2:#9090a8;
+  --accent:#FF883F;--green:#22c97a;--yellow:#f5a623;--red:#ff4d4d;--blue:#4d9fff;
+  --font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;
+  --sidebar-width:220px;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased}
+.app-layout{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-width);background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow-y:hidden}
+.sidebar-logo{display:flex;align-items:center;justify-content:center;padding:22px 18px 18px;border-bottom:1px solid var(--border);text-decoration:none}
+.sidebar-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--muted2);text-decoration:none;font-size:13px;font-weight:500;transition:all 0.15s;cursor:pointer;border:none;background:transparent;width:100%;text-align:left}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(255,136,63,0.1);color:var(--accent);font-weight:600}
+.nav-item-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.sidebar-bottom{padding:10px 10px 14px;border-top:1px solid var(--border)}
+.main{margin-left:var(--sidebar-width);flex:1;padding:36px 40px}
+
+/* Page header */
+.page-header{margin-bottom:28px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.page-title{font-size:22px;font-weight:800;letter-spacing:-0.03em;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--muted2)}
+.header-actions{display:flex;gap:8px;flex-shrink:0}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);border:none;transition:all 0.15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{opacity:0.9}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+.btn-secondary{background:var(--surface2);border:1px solid var(--border2);color:var(--text2)}
+.btn-secondary:hover{border-color:var(--border);color:var(--text)}
+
+/* Tesseract briefing */
+.tesseract-briefing{
+  background:linear-gradient(135deg,rgba(10,10,20,0.9) 0%,rgba(15,30,60,0.5) 100%);
+  border:1px solid rgba(100,160,255,0.15);
+  border-radius:14px;padding:20px 24px;margin-bottom:24px;
+  display:flex;gap:16px;align-items:flex-start;
+}
+.briefing-icon{font-size:22px;color:#7eb8ff;flex-shrink:0;margin-top:2px}
+.briefing-content{flex:1}
+.briefing-label{font-size:10px;font-weight:700;color:#7eb8ff;text-transform:uppercase;letter-spacing:0.1em;font-family:var(--mono);margin-bottom:6px}
+.briefing-text{font-size:13px;color:#c0c8e0;line-height:1.7}
+.briefing-loading{font-size:13px;color:var(--muted);font-style:italic}
+
+/* Status bar */
+.agent-status{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;
+  margin-bottom:24px;font-size:12px;
+}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status-dot.active{background:var(--green);box-shadow:0 0 6px rgba(34,201,122,0.4)}
+.status-dot.idle{background:var(--muted)}
+.status-text{color:var(--text2)}
+.status-meta{color:var(--muted);margin-left:auto;font-family:var(--mono)}
+
+/* Sections */
+.section{margin-bottom:32px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-family:var(--mono)}
+.section-count{font-size:11px;color:var(--muted2);font-family:var(--mono)}
+
+/* Fix cards */
+.fix-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:18px 20px;margin-bottom:10px;
+  transition:border-color 0.15s;
+}
+.fix-card:hover{border-color:var(--border2)}
+.fix-card.pending{border-left:3px solid var(--accent)}
+.fix-card.approved{border-left:3px solid var(--blue)}
+.fix-card.deployed{border-left:3px solid var(--green)}
+.fix-card.rejected{border-left:3px solid var(--muted2);opacity:0.6}
+.fix-card.failed{border-left:3px solid var(--red)}
+
+.fix-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+.fix-type-badge{
+  font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:4px;
+  text-transform:uppercase;letter-spacing:0.06em;font-family:var(--mono);
+  flex-shrink:0;margin-top:2px;
+}
+.fix-type-badge.meta_description{background:rgba(255,136,63,.1);color:var(--accent)}
+.fix-type-badge.page_title{background:rgba(77,159,255,.1);color:var(--blue)}
+.fix-type-badge.alt_text{background:rgba(34,201,122,.1);color:var(--green)}
+
+.fix-body{flex:1;min-width:0}
+.fix-site{font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:3px}
+.fix-issue{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.fix-preview{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.fix-preview-label{font-size:9.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-family:var(--mono);margin-bottom:4px}
+.fix-preview-text{font-size:12px;color:var(--text2);line-height:1.5}
+.fix-reasoning{font-size:11px;color:rgba(100,160,255,0.7);font-style:italic;display:flex;gap:6px;align-items:flex-start}
+.fix-reasoning-icon{font-size:12px;flex-shrink:0}
+.fix-impact{font-size:10px;font-family:var(--mono);color:var(--green);margin-top:4px}
+
+.fix-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.fix-approve{font-size:12px;font-weight:600;padding:7px 16px;border-radius:7px;cursor:pointer;font-family:var(--font);border:1px solid rgba(34,201,122,0.3);background:rgba(34,201,122,0.08);color:var(--green);transition:all 0.15s}
+.fix-approve:hover{background:rgba(34,201,122,0.15)}
+.fix-approve:disabled{opacity:0.4;cursor:not-allowed}
+.fix-deploy{font-size:12px;font-weight:600;padding:7px 16px;border-radius:7px;cursor:pointer;font-family:var(--font);border:1px solid rgba(255,136,63,0.3);background:rgba(255,136,63,0.08);color:var(--accent);transition:all 0.15s}
+.fix-deploy:hover{background:rgba(255,136,63,0.15)}
+.fix-deploy:disabled{opacity:0.4;cursor:not-allowed}
+.fix-reject{font-size:12px;font-weight:600;padding:7px 16px;border-radius:7px;cursor:pointer;font-family:var(--font);border:1px solid var(--border2);background:transparent;color:var(--muted2);transition:all 0.15s}
+.fix-reject:hover{border-color:var(--red);color:var(--red)}
+.fix-reject:disabled{opacity:0.4;cursor:not-allowed}
+.fix-status-label{font-size:11px;color:var(--muted);margin-left:auto;align-self:center;font-family:var(--mono)}
+
+/* Empty state */
+.empty-state{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:48px;text-align:center;
+}
+.empty-icon{font-size:32px;margin-bottom:12px;opacity:0.4}
+.empty-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px}
+.empty-text{font-size:13px;color:var(--muted2);line-height:1.6;max-width:360px;margin:0 auto 20px}
+
+/* Loading */
+.loading-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.loading-pulse{width:100%;height:12px;background:var(--surface2);border-radius:6px;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:0.4}50%{opacity:0.8}}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e1e2e;border:1px solid var(--border2);border-radius:10px;padding:12px 20px;font-size:13px;color:var(--text);z-index:999;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.toast.show{display:block;animation:slideUp 0.2s ease}
+@keyframes slideUp{from{transform:translateX(-50%) translateY(10px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+      <a href="forge-ai-dashboard.html" class="sidebar-logo">
+        <img src="Powered by Werdel Global Systems.png" alt="Forge AI" style="height:80px;width:auto;object-fit:contain;mix-blend-mode:screen;" onerror="this.style.display='none'">
+      </a>
+      <nav class="sidebar-nav">
+      <a class="nav-item" href="forge-ai-dashboard.html"><span class="nav-item-icon">⚡</span> Dashboard</a>
+      <a class="nav-item" href="forge-ai-report.html"><span class="nav-item-icon">📄</span> Reports</a>
+      <a class="nav-item" id="alerts-nav" href="forge-ai-dashboard.html#alerts"><span class="nav-item-icon">🔔</span> Alerts</a>
+      <a class="nav-item" id="connections-nav" style="display:none" href="forge-ai-dashboard.html#connections"><span class="nav-item-icon">🔗</span> Connections</a>
+      <a class="nav-item" id="team-nav" style="display:none" href="forge-ai-team.html"><span class="nav-item-icon">👥</span> Team</a>
+      <a class="nav-item active" href="forge-ai-agent.html"><span class="nav-item-icon">🤖</span> Forge Agent</a>
+      <a class="nav-item" id="billing-nav" href="forge-ai-billing.html"><span class="nav-item-icon">💳</span> Billing</a>
+      <a class="nav-item" id="settings-nav" href="forge-ai-settings.html"><span class="nav-item-icon">⚙️</span> Settings</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div style="padding:12px 10px">
+          <div style="font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Agency</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)" id="sb-agency-name">—</div>
+          <div style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;background:rgba(107,107,120,0.15);color:#70708a" id="sb-plan-badge">Free</div>
+        </div>
+        <button class="nav-item" onclick="doSignOut()" style="color:var(--muted2);width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit">
+          <span class="nav-item-icon">→</span> Sign out
+        </button>
+      </div>
+    </aside>
+  <div class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Forge Agent</div>
+        <div class="page-sub">AI-generated fixes for your WordPress and Wix sites — review and deploy with one click.</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" onclick="loadQueue()">↻ Refresh</button>
+        <button class="btn btn-primary" id="generate-btn" onclick="generateQueue()">⚡ Scan for Fixes</button>
+      </div>
+    </div>
+
+    <!-- Tesseract Briefing -->
+    <div class="tesseract-briefing">
+      <div class="briefing-icon">⬡</div>
+      <div class="briefing-content">
+        <div class="briefing-label">Tesseract · Agent Intelligence</div>
+        <div class="briefing-text" id="briefing-text">
+          <span class="briefing-loading">Loading your agent briefing...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="agent-status">
+      <div class="status-dot active" id="status-dot"></div>
+      <div class="status-text" id="status-text">Forge Agent is ready</div>
+      <div class="status-meta" id="status-meta">WordPress &amp; Wix</div>
+    </div>
+
+    <!-- Pending Approvals -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Pending Approval</div>
+        <div class="section-count" id="pending-count">—</div>
+      </div>
+      <div id="pending-list">
+        <div class="loading-card"><div class="loading-pulse"></div></div>
+        <div class="loading-card"><div class="loading-pulse"></div></div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">History</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="section-count" id="history-count">—</div>
+          <button onclick="clearHistory()" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);border:1px solid var(--border2);background:transparent;color:var(--muted);transition:all 0.15s" onmouseover="this.style.color='var(--red)';this.style.borderColor='rgba(255,77,77,0.3)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border2)'">Clear</button>
+        </div>
+      </div>
+      <div id="history-list">
+        <div class="loading-card"><div class="loading-pulse"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+let USER = null;
+let SESSION_TOKEN = null;
+
+const TYPE_LABELS = {
+  meta_description: 'Meta Description',
+  page_title: 'Page Title',
+  alt_text: 'Alt Text'
+};
+
+const TYPE_DESCRIPTIONS = {
+  meta_description: 'The search result snippet shown on Google',
+  page_title: 'The title shown in browser tabs and search results',
+  alt_text: 'Image description for accessibility and SEO'
+};
+
+async function init() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'forge-ai-login.html'; return; }
+    // Verify session is valid server-side — catches deleted/revoked accounts
+    const { data: { user: serverUser }, error: userErr } = await sb.auth.getUser();
+    if (userErr || !serverUser) { await sb.auth.signOut(); window.location.href = 'forge-ai-login.html'; return; }
+    USER = serverUser;
+    SESSION_TOKEN = session.access_token;
+    var roleInfo = await applyNavRole(sb, USER.id, USER.email);
+    var an = document.getElementById('sb-agency-name');
+    if (an) an.textContent = (USER.user_metadata || {}).agency_name || USER.email.split('@')[0];
+    // Team members CAN access Forge Agent — no redirect needed
+    await loadQueue();
+    await loadBriefing();
+  } catch(e) {
+    console.error('Init error:', e.message);
+  }
+}
+
+async function loadQueue() {
+  try {
+    const res = await fetch('/api/agent-queue', {
+      headers: { 'Authorization': 'Bearer ' + SESSION_TOKEN }
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    window.FIXES = data.fixes || [];
+    renderQueue(window.FIXES);
+  } catch(e) {
+    console.error('Load queue error:', e.message);
+    showError('Could not load fix queue.');
+  }
+}
+
+function renderQueue(fixes) {
+  const pending = fixes.filter(function(f) { return f.status === 'pending' || f.status === 'approved'; });
+  const history = fixes.filter(function(f) { return f.status === 'deployed' || f.status === 'rejected' || f.status === 'failed'; });
+
+  document.getElementById('pending-count').textContent = pending.length + ' fix' + (pending.length !== 1 ? 'es' : '');
+  document.getElementById('history-count').textContent = history.length + ' item' + (history.length !== 1 ? 's' : '');
+
+  // Render pending
+  var pendingList = document.getElementById('pending-list');
+  if (pending.length === 0) {
+    pendingList.innerHTML = '<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-title">No fixes pending</div><div class="empty-text">Click "Scan for Fixes" to analyze your WordPress sites and generate a list of improvements for your review.</div><button class="btn btn-primary" onclick="generateQueue()">⚡ Scan for Fixes</button></div>';
+  } else {
+    pendingList.innerHTML = pending.map(function(fix) { return renderFixCard(fix); }).join('');
+  }
+
+  // Render history
+  var historyList = document.getElementById('history-list');
+  if (history.length === 0) {
+    historyList.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No history yet</div><div class="empty-text">Deployed and rejected fixes will appear here.</div></div>';
+  } else {
+    historyList.innerHTML = history.map(function(fix) { return renderFixCard(fix); }).join('');
+  }
+}
+
+function renderFixCard(fix) {
+  var typeLabel = TYPE_LABELS[fix.issue_type] || fix.issue_type;
+  var date = fix.deployed_at || fix.approved_at || fix.created_at;
+  var dateStr = date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+
+  var actionsHtml = '';
+  if (fix.status === 'pending') {
+    actionsHtml = '<div class="fix-actions">' +
+      '<button class="fix-approve" data-id="' + fix.id + '" data-action="approve" onclick="handleFixBtn(this)">&#x2713; Approve</button>' +
+      '<button class="fix-reject" data-id="' + fix.id + '" data-action="reject" onclick="handleFixBtn(this)">&#x2715; Reject</button>' +
+      '</div>';
+  } else if (fix.status === 'approved') {
+    actionsHtml = '<div class="fix-actions">' +
+      '<button class="fix-deploy" data-id="' + fix.id + '" data-action="deploy" onclick="handleFixBtn(this)">&#x26A1; Deploy to ' + (fix.platform === 'wix' ? 'Wix' : 'WordPress') + '</button>' +
+      '<button class="fix-reject" data-id="' + fix.id + '" data-action="reject" onclick="handleFixBtn(this)">&#x2715; Reject</button>' +
+      '<div class="fix-status-label">Approved &middot; Ready to deploy</div>' +
+      '</div>';
+  } else if (fix.status === 'deployed') {
+    var scoreInfo = '';
+    if (fix.verified_score !== null && fix.verified_score !== undefined) {
+      if (fix.score_before !== null && fix.score_before !== undefined && fix.score_before !== fix.verified_score) {
+        var diff = fix.verified_score - fix.score_before;
+        var diffStr = diff > 0 ? ' (+' + diff + ')' : ' (' + diff + ')';
+        var diffColor = diff > 0 ? 'var(--green)' : 'var(--red)';
+        scoreInfo = ' &nbsp;·&nbsp; <span style="color:' + diffColor + '">' + fix.score_before + ' &rarr; ' + fix.verified_score + diffStr + '</span>';
+      } else {
+        scoreInfo = ' &nbsp;·&nbsp; Score: ' + fix.verified_score + '/100';
+      }
+    }
+    actionsHtml = '<div class="fix-actions"><div class="fix-status-label" style="color:var(--green);margin-left:0">&#x2713; Deployed ' + dateStr + scoreInfo + '</div></div>';
+  } else if (fix.status === 'rejected') {
+    actionsHtml = '<div class="fix-actions"><div class="fix-status-label" style="margin-left:0">&#x2715; Rejected</div></div>';
+  } else if (fix.status === 'failed') {
+    actionsHtml = '<div class="fix-actions"><div class="fix-status-label" style="color:var(--red);margin-left:0">&#x26A0; Failed: ' + escHtml(fix.error_message || 'Unknown error') + '</div></div>';
+  }
+
+  return '<div class="fix-card ' + fix.status + '" id="fix-' + fix.id + '">' +
+    '<div class="fix-top">' +
+      '<span class="fix-type-badge ' + fix.issue_type + '">' + typeLabel + '</span>' +
+      (fix.platform === 'wix' ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#FAAD0115;border:1px solid #FAAD0133;color:#FAAD01;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;font-family:var(--mono);margin-left:6px"><img src=\"https://cdn.simpleicons.org/wix/FAAD01\" width=\"10\" height=\"10\" style=\"vertical-align:middle\"> WIX</span>' : '') +
+      '<div class="fix-body">' +
+        '<div class="fix-site">' + escHtml(fix.site_name || fix.site_url) + ' &middot; ' + escHtml(fix.target_label || '') + '</div>' +
+        '<div class="fix-issue">' + escHtml(fix.issue_description || '') + '</div>' +
+        '<div class="fix-preview">' +
+          '<div class="fix-preview-label">Proposed Fix</div>' +
+          '<div class="fix-preview-text">' + escHtml(fix.proposed_fix || '') + '</div>' +
+        '</div>' +
+        (fix.tesseract_reasoning ? '<div class="fix-reasoning"><span class="fix-reasoning-icon">&#x29BF;</span><span>' + escHtml(fix.tesseract_reasoning) + '</span></div>' : '') +
+        '<div class="fix-impact">+' + (fix.points_impact || 0) + ' pts potential</div>' +
+      '</div>' +
+    '</div>' +
+    actionsHtml +
+  '</div>';
+}
+
+function handleFixBtn(btn) {
+  var fixId = btn.getAttribute('data-id');
+  var action = btn.getAttribute('data-action');
+  handleFix(fixId, action);
+}
+
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function handleFix(fixId, action) {
+  var card = document.getElementById('fix-' + fixId);
+  var btns = card ? card.querySelectorAll('button') : [];
+  btns.forEach(function(b) { b.disabled = true; });
+
+  var actionLabels = { approve: 'Approving...', reject: 'Rejecting...', deploy: 'Deploying...' };
+  setStatus(actionLabels[action] || 'Processing...');
+
+  try {
+    // Refresh session token before API call
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) SESSION_TOKEN = session.access_token;
+
+    var res = await fetch('/api/agent-deploy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SESSION_TOKEN },
+      body: JSON.stringify({ fixId: fixId, action: action })
+    });
+    var data = await res.json();
+    // Check if credentials are needed — show popup instead of error
+    if (!data.success && data.needsCredentials) {
+      btns.forEach(function(b) { b.disabled = false; });
+      setStatus('Forge Agent is ready');
+      showCredsModal(fixId);
+      return;
+    }
+    if (!data.success) throw new Error(data.error || 'Action failed');
+
+    var messages = {
+      approve: '✓ Fix approved — ready to deploy',
+      reject: 'Fix rejected',
+      deploy: (data.verifiedScore && data.scoreBefore && data.scoreBefore !== data.verifiedScore)
+        ? '⚡ Deployed · Score: ' + data.scoreBefore + ' → ' + data.verifiedScore + ' (+' + (data.verifiedScore - data.scoreBefore) + ')'
+        : data.verifiedScore
+          ? '⚡ Deployed · Score: ' + data.verifiedScore + '/100'
+          : '⚡ Fix deployed' + (data.platform === 'wix' ? ' to Wix' : data.verified === false ? ' (verify failed)' : '')
+    };
+    showToast(messages[action] || 'Done');
+    setStatus('Forge Agent is ready');
+    await loadQueue();
+  } catch(e) {
+    btns.forEach(function(b) { b.disabled = false; });
+    showToast('Error: ' + (e.message || 'Action failed'), true);
+    setStatus('Forge Agent is ready');
+  }
+}
+
+// ── CREDENTIALS MODAL ─────────────────────────────────────
+function showCredsModal(fixId) {
+  var modal = document.getElementById('creds-modal');
+  var sheet = document.getElementById('creds-sheet');
+  var backdrop = document.getElementById('creds-backdrop');
+  if (!modal) return;
+  document.getElementById('creds-fix-id').value = fixId || '';
+  modal.style.display = 'flex';
+  setTimeout(function() {
+    backdrop.style.background = 'rgba(0,0,0,0.6)';
+    backdrop.style.backdropFilter = 'blur(4px)';
+    sheet.style.transform = 'scale(1) translateY(0)';
+    sheet.style.opacity = '1';
+    setTimeout(function() {
+      var u = document.getElementById('creds-username');
+      if (u) u.focus();
+    }, 200);
+  }, 10);
+}
+
+function closeCredsModal() {
+  var sheet = document.getElementById('creds-sheet');
+  var backdrop = document.getElementById('creds-backdrop');
+  var modal = document.getElementById('creds-modal');
+  sheet.style.transform = 'scale(0.9) translateY(20px)';
+  sheet.style.opacity = '0';
+  backdrop.style.background = 'rgba(0,0,0,0)';
+  backdrop.style.backdropFilter = 'blur(0px)';
+  setTimeout(function() { modal.style.display = 'none'; }, 350);
+}
+
+async function saveCredsAndDeploy() {
+  var username = document.getElementById('creds-username').value.trim();
+  var appPassword = document.getElementById('creds-password').value.trim();
+  var fixId = document.getElementById('creds-fix-id').value;
+
+  if (!username) { document.getElementById('creds-username').style.borderColor = 'var(--red)'; return; }
+  if (!appPassword) { document.getElementById('creds-password').style.borderColor = 'var(--red)'; return; }
+
+  var saveBtn = document.getElementById('creds-save-btn');
+  saveBtn.textContent = 'Saving...';
+  saveBtn.disabled = true;
+
+  try {
+    // Get the site URL from the fix being deployed
+    var siteUrl = '';
+    if (window.FIXES) {
+      var fix = window.FIXES.find(function(f) { return String(f.id) === String(fixId); });
+      if (fix) siteUrl = fix.site_url || fix.page_url || '';
+    }
+    if (!siteUrl) throw new Error('Could not find site URL for this fix. Please try again.');
+    if (!SESSION_TOKEN) throw new Error('Not logged in. Please refresh the page.');
+
+    // Save credentials via API
+    var res = await fetch('/api/save-wp-credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SESSION_TOKEN },
+      body: JSON.stringify({ siteUrl: siteUrl, username: username, password: appPassword })
+    });
+    var data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Failed to save credentials');
+
+    closeCredsModal();
+    showToast('Credentials saved! Deploying fix...');
+
+    // Retry the deploy
+    if (fixId) {
+      setTimeout(function() { handleFix(fixId, 'deploy'); }, 500);
+    }
+  } catch(e) {
+    saveBtn.textContent = 'Save & Deploy →';
+    saveBtn.disabled = false;
+    showToast('Error: ' + e.message, true);
+  }
+}
+
+async function generateQueue() {
+  var btn = document.getElementById('generate-btn');
+  btn.textContent = '⏳ Scanning...';
+  btn.disabled = true;
+  setStatus('Scanning WordPress sites for issues...');
+
+  try {
+    var res = await fetch('/api/agent-queue', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SESSION_TOKEN }
+    });
+    var data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Scan failed');
+    showToast(data.message || 'Scan complete');
+    await loadQueue();
+    await loadBriefing();
+  } catch(e) {
+    showToast('Error: ' + e.message, true);
+  }
+
+  btn.textContent = '⚡ Scan for Fixes';
+  btn.disabled = false;
+  setStatus('Forge Agent is ready');
+}
+
+async function loadBriefing() {
+  try {
+    const res = await fetch('/api/agent-queue', {
+      headers: { 'Authorization': 'Bearer ' + SESSION_TOKEN }
+    });
+    const data = await res.json();
+    const fixes = data.fixes || [];
+    window.FIXES = fixes;
+
+    var pending = fixes.filter(function(f) { return f.status === 'pending'; });
+    var deployed = fixes.filter(function(f) { return f.status === 'deployed'; });
+
+    var briefingEl = document.getElementById('briefing-text');
+
+    if (fixes.length === 0) {
+      briefingEl.textContent = 'No WordPress sites are connected or no fixes have been generated yet. Click "Scan for Fixes" to get started.';
+      return;
+    }
+
+    // Generate Tesseract briefing
+    var context = 'Forge Agent has ' + pending.length + ' pending fix' + (pending.length !== 1 ? 'es' : '') + ' waiting for approval and ' + deployed.length + ' fix' + (deployed.length !== 1 ? 'es' : '') + ' deployed.';
+    if (pending.length > 0) {
+      var types = {};
+      pending.forEach(function(f) { types[f.issue_type] = (types[f.issue_type] || 0) + 1; });
+      context += ' Pending fixes: ' + Object.entries(types).map(function(e) { return e[1] + ' ' + (TYPE_LABELS[e[0]] || e[0]); }).join(', ') + '.';
+    }
+
+    var tessRes = await fetch('/api/tesseract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SESSION_TOKEN },
+      body: JSON.stringify({
+        question: 'Give a 2-sentence briefing about the Forge Agent fix queue status. ' + context + ' Be direct and specific.',
+        context: context,
+        history: []
+      })
+    });
+
+    var tessData = await tessRes.json();
+    if (tessData.success && tessData.response && tessData.response.message) {
+      briefingEl.textContent = tessData.response.message.replace(/\*\*/g, '').replace(/```[\s\S]*```/g, '').trim();
+    } else {
+      briefingEl.textContent = context;
+    }
+  } catch(e) {
+    document.getElementById('briefing-text').textContent = 'Forge Agent is active and monitoring your WordPress sites.';
+  }
+}
+
+function setStatus(text) {
+  var el = document.getElementById('status-text');
+  if (el) el.textContent = text;
+}
+
+function showToast(msg, isError) {
+  var toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.borderColor = isError ? 'rgba(255,77,77,0.3)' : 'rgba(34,201,122,0.3)';
+  toast.style.color = isError ? 'var(--red)' : 'var(--green)';
+  toast.classList.add('show');
+  setTimeout(function() { toast.classList.remove('show'); }, 3000);
+}
+
+async function clearHistory() {
+  if (!confirm('Clear all rejected and failed fixes from history?')) return;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) SESSION_TOKEN = session.access_token;
+    const { error } = await sb.from('agent_fixes')
+      .delete()
+      .eq('user_id', USER.id)
+      .in('status', ['rejected', 'failed']);
+    if (error) throw new Error(error.message);
+    showToast('History cleared');
+    await loadQueue();
+  } catch(e) {
+    showToast('Error: ' + e.message, true);
+  }
+}
+
+function showError(msg) {
+  showToast(msg, true);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+<script>
+
+async function doSignOut() {
+  await sb.auth.signOut();
+  window.location.href = 'forge-ai-login.html';
+}
+
+async function applyNavRole(sb, userId, userEmail) {
+  try {
+    var hide = function(id) { var el=document.getElementById(id); if(el) el.style.display='none'; };
+    var show = function(id) { var el=document.getElementById(id); if(el) el.style.display='flex'; };
+    var planBadge = document.getElementById('sb-plan-badge');
+    var agencyEl = document.getElementById('sb-agency-name');
+    var memberRes = await sb.from('team_members').select('role,agency_id').eq('user_id',userId).eq('status','active').maybeSingle();
+    var member = memberRes.data;
+
+    if (member) {
+      hide('team-nav'); hide('billing-nav'); hide('settings-nav');
+      hide('connections-nav'); hide('agent-nav'); hide('alerts-nav');
+      if (member.role === 'manager' || member.role === 'developer') {
+        show('alerts-nav'); show('connections-nav'); show('agent-nav');
+      }
+      if (planBadge) { planBadge.textContent = member.role.charAt(0).toUpperCase()+member.role.slice(1); planBadge.style.background='rgba(34,201,122,0.1)'; planBadge.style.color='#22c97a'; }
+      if (agencyEl) agencyEl.textContent = (typeof USER !== 'undefined' && USER && USER.user_metadata?.agency_name) ? USER.user_metadata.agency_name : 'Your Agency';
+      return { isTeamMember: true, role: member.role, plan: 'agency' };
+    }
+
+    var subRes = await sb.from('subscriptions').select('plan,sites_limit').eq('email',userEmail).maybeSingle();
+    var sub = subRes.data;
+    var plan = (sub && sub.plan) ? sub.plan : 'free';
+    var planNames = { free:'Free', starter:'Starter', agency:'Agency', enterprise:'Enterprise' };
+    var planColors = { free:{bg:'rgba(107,107,120,0.15)',color:'#70708a'}, starter:{bg:'rgba(77,159,255,0.12)',color:'#4d9fff'}, agency:{bg:'rgba(34,201,122,0.12)',color:'#22c97a'}, enterprise:{bg:'rgba(255,136,63,0.12)',color:'#FF883F'} };
+    if (planBadge) { planBadge.textContent=planNames[plan]||'Free'; var c=planColors[plan]||planColors.free; planBadge.style.background=c.bg; planBadge.style.color=c.color; }
+    if (agencyEl) agencyEl.textContent = userEmail.split('@')[0];
+    hide('alerts-nav'); hide('connections-nav'); hide('team-nav'); hide('agent-nav');
+    if (plan === 'free' || plan === 'starter') {
+      window.location.href = 'forge-ai-dashboard.html';
+      return { isTeamMember: false, role: 'owner', plan: plan };
+    }
+    show('alerts-nav'); show('connections-nav'); show('team-nav'); show('agent-nav');
+    window.FORGE_PLAN = plan;
+    return { isTeamMember: false, role: 'owner', plan: plan };
+  } catch(e) { return { isTeamMember: false, role: 'owner', plan: 'free' }; }
+}
+</script>
+
+<!-- Credentials Modal -->
+<div id="creds-modal" onclick="if(event.target===this)closeCredsModal()" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center">
+  <div id="creds-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0);backdrop-filter:blur(0px);transition:all 0.3s cubic-bezier(0.4,0,0.2,1)"></div>
+  <div id="creds-sheet" style="position:relative;background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px;width:90%;max-width:420px;transform:scale(0.9) translateY(20px);opacity:0;transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 24px 60px rgba(0,0,0,0.6)">
+    <input type="hidden" id="creds-fix-id">
+    <button onclick="closeCredsModal()" style="position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);cursor:pointer;width:28px;height:28px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center">×</button>
+    <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;letter-spacing:-0.02em">WordPress Credentials</div>
+    <div style="font-size:13px;color:var(--muted2);margin-bottom:24px;line-height:1.6">To deploy fixes to your WordPress site, Forge AI needs your login username and an Application Password.</div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">WordPress Username</div>
+    <input id="creds-username" type="text" placeholder="e.g. admin" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;box-sizing:border-box;margin-bottom:14px;transition:border-color 0.2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Application Password</div>
+    <input id="creds-password" type="password" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;box-sizing:border-box;margin-bottom:8px;transition:border-color 0.2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'" onkeydown="if(event.key==='Enter')saveCredsAndDeploy()">
+    <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:20px">Create an Application Password in WordPress: <strong style="color:var(--text2)">Users → Your Profile → Application Passwords</strong>. Give it any name (e.g. "Forge AI") and copy the generated password.</div>
+    <button id="creds-save-btn" onclick="saveCredsAndDeploy()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);transition:opacity 0.15s" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Save & Deploy Fix →</button>
+    <button onclick="closeCredsModal()" style="width:100%;background:none;border:none;color:var(--muted);padding:10px;font-size:13px;cursor:pointer;font-family:var(--font);margin-top:4px">Cancel</button>
+  </div>
+</div>
+
+</body>
+</html>
