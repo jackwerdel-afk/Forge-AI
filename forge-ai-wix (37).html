@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script
+  src="https://js.sentry-cdn.com/dd106e0b26f3052871b6db507d53c4ce.min.js"
+  crossorigin="anonymous"
+></script>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI — Wix Connection</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function() {
+  var SUPABASE_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+  var ACTIVE_PAGE = 'connections';
+
+  function waitForSupabase(cb) {
+    if (typeof supabase !== 'undefined') { cb(); return; }
+    var t = 0;
+    var i = setInterval(function() {
+      t++;
+      if (typeof supabase !== 'undefined') { clearInterval(i); cb(); }
+      if (t > 50) clearInterval(i);
+    }, 100);
+  }
+
+  function buildSidebar() {
+    var container = document.getElementById('sidebar-container');
+    if (!container) return;
+
+    var navItems = [
+      { key: 'dashboard',   href: 'forge-ai-dashboard.html',            icon: '⚡', label: 'Dashboard',   id: '' },
+      { key: 'reports',     href: 'forge-ai-report.html',               icon: '📄', label: 'Reports',     id: '' },
+      { key: 'alerts',      href: 'forge-ai-dashboard.html#alerts',     icon: '🔔', label: 'Alerts',      id: 'alerts-nav', badge: 'alerts-badge' },
+      { key: 'connections', href: 'forge-ai-dashboard.html#connections', icon: '🔗', label: 'Connections', id: 'connections-nav' },
+      { key: 'team',        href: 'forge-ai-team.html',                 icon: '👥', label: 'Team',        id: 'team-nav' },
+      { key: 'agent',       href: 'forge-ai-agent.html',                icon: '🤖', label: 'Forge Agent', id: 'agent-nav' },
+      { key: 'billing',     href: 'forge-ai-billing.html',              icon: '💳', label: 'Billing',     id: 'billing-nav' },
+      { key: 'settings',    href: 'forge-ai-settings.html',             icon: '⚙️', label: 'Settings',    id: 'settings-nav' },
+    ];
+
+    var logoLink = document.createElement('a');
+    logoLink.href = 'forge-ai-dashboard.html';
+    logoLink.className = 'sidebar-logo';
+    var logoImg = document.createElement('img');
+    logoImg.src = 'Powered by Werdel Global Systems.png';
+    logoImg.alt = 'Forge AI';
+    logoImg.style.cssText = 'height:80px;width:auto;object-fit:contain;mix-blend-mode:screen;';
+    logoImg.onerror = function() { this.style.display = 'none'; };
+    logoLink.appendChild(logoImg);
+    container.appendChild(logoLink);
+
+    var nav = document.createElement('nav');
+    nav.className = 'sidebar-nav';
+    navItems.forEach(function(item) {
+      var a = document.createElement('a');
+      a.href = item.href;
+      a.className = 'nav-item' + (item.key === ACTIVE_PAGE ? ' active' : '');
+      if (item.id) a.id = item.id;
+      if (item.key === 'connections' || item.key === 'team') a.style.display = 'none';
+      var icon = document.createElement('span');
+      icon.className = 'nav-item-icon';
+      icon.textContent = item.icon;
+      a.appendChild(icon);
+      a.appendChild(document.createTextNode(' ' + item.label));
+      if (item.badge) {
+        var badge = document.createElement('span');
+        badge.id = item.badge;
+        badge.style.cssText = 'display:none;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;min-width:16px;text-align:center;margin-left:auto';
+        badge.textContent = '0';
+        a.appendChild(badge);
+      }
+      nav.appendChild(a);
+    });
+    container.appendChild(nav);
+
+    var bottom = document.createElement('div');
+    bottom.className = 'sidebar-bottom';
+    bottom.innerHTML = '<div style="padding:12px 10px"><div style="font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Agency</div><div style="font-size:13px;font-weight:600;color:var(--text)" id="sb-agency-name">—</div><div style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700;background:rgba(107,107,120,0.15);color:#70708a" id="sb-plan-badge">Free</div></div><button class="nav-item" onclick="window.sbSignOut()" style="color:var(--muted2);width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit"><span class="nav-item-icon">→</span> Sign out</button>';
+    container.appendChild(bottom);
+  }
+
+  window.sbSignOut = async function() {
+    var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    await sb.auth.signOut();
+    window.location.href = 'forge-ai-login.html';
+  };
+
+  window.sbApplyRole = async function(userId, userEmail) {
+    try {
+      var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+      var hide = function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; };
+      var show = function(id) { var el = document.getElementById(id); if (el) el.style.display = 'flex'; };
+      var planBadge = document.getElementById('sb-plan-badge');
+      var agencyNameEl = document.getElementById('sb-agency-name');
+      var memberRes = await sb.from('team_members').select('role,agency_id').eq('user_id', userId).eq('status','active').maybeSingle();
+      var member = memberRes.data;
+      if (member) {
+        hide('team-nav'); hide('billing-nav'); hide('settings-nav'); hide('connections-nav'); hide('agent-nav'); hide('alerts-nav');
+        if (member.role === 'manager' || member.role === 'developer') {
+          show('alerts-nav'); show('connections-nav'); show('agent-nav');
+        }
+        if (planBadge) { planBadge.textContent = member.role.charAt(0).toUpperCase()+member.role.slice(1); planBadge.style.background='rgba(34,201,122,0.1)'; planBadge.style.color='#22c97a'; }
+        if (agencyNameEl) agencyNameEl.textContent = window.USER && window.USER.user_metadata && window.USER.user_metadata.agency_name ? window.USER.user_metadata.agency_name : 'Your Agency';
+        return { role: member.role, agencyId: member.agency_id, isTeamMember: true, plan: 'agency' };
+      } else {
+        var subRes = await sb.from('subscriptions').select('plan,sites_limit').eq('email',userEmail).maybeSingle();
+        var sub = subRes.data;
+        var plan = (sub && sub.plan) ? sub.plan : 'free';
+        var siteLimit = (sub && sub.sites_limit) ? sub.sites_limit : 3;
+        var planNames = { free:'Free', starter:'Starter', agency:'Agency', enterprise:'Enterprise' };
+        var planColors = { free:{bg:'rgba(107,107,120,0.15)',color:'#70708a'}, starter:{bg:'rgba(77,159,255,0.12)',color:'#4d9fff'}, agency:{bg:'rgba(34,201,122,0.12)',color:'#22c97a'}, enterprise:{bg:'rgba(255,136,63,0.12)',color:'#FF883F'} };
+        if (planBadge) { planBadge.textContent = planNames[plan]||'Free'; var c=planColors[plan]||planColors.free; planBadge.style.background=c.bg; planBadge.style.color=c.color; }
+        window.FORGE_PLAN = plan;
+        window.FORGE_SITES_LIMIT = siteLimit;
+        hide('alerts-nav'); hide('connections-nav'); hide('team-nav'); hide('agent-nav');
+        if (plan === 'free') {
+        } else if (plan === 'starter') {
+          show('alerts-nav'); show('connections-nav');
+        } else if (plan === 'agency' || plan === 'enterprise') {
+          show('alerts-nav'); show('connections-nav'); show('team-nav'); show('agent-nav');
+        }
+        // Set agency name
+        if (agencyNameEl && window.USER && window.USER.user_metadata && window.USER.user_metadata.agency_name) {
+          agencyNameEl.textContent = window.USER.user_metadata.agency_name;
+        }
+        return { role:'owner', agencyId:userId, isTeamMember:false, plan:plan, siteLimit:siteLimit };
+      }
+    } catch(e) {
+      console.log('Sidebar error:', e.message);
+      return { role:'owner', agencyId:userId, isTeamMember:false, plan:'free', siteLimit:3 };
+    }
+  };
+
+  window.sbSetAgencyName = function(name) {
+    var el = document.getElementById('sb-agency-name');
+    if (el) el.textContent = name || '—';
+  };
+
+  function buildSidebarWhenReady() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', buildSidebar);
+    } else {
+      buildSidebar();
+    }
+  }
+
+  waitForSupabase(buildSidebarWhenReady);
+})();
+</script>
+<style>
+:root {
+  --bg:#09090f;--sidebar:#111117;--surface:#111117;--surface2:#17171f;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#f0f0f5;--text2:#a0a0b0;--muted:#606070;--muted2:#9090a8;
+  --accent:#FF883F;--accent2:#ff6b20;
+  --green:#22c97a;--red:#ff4d4d;--yellow:#f5a623;--blue:#4d9fff;
+  --font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;
+  --sidebar-width:220px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
+
+/* ── ANIMATIONS ─────────────────────────────────────── */
+@keyframes fadeUp {
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes slideIn {
+  from{opacity:0;transform:translateX(20px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes pulse {
+  0%,100%{opacity:1}50%{opacity:0.4}
+}
+@keyframes spin {
+  from{transform:rotate(0deg)}to{transform:rotate(360deg)}
+}
+.fade-up{animation:fadeUp 0.4s ease forwards;opacity:0}
+.fade-up-1{animation-delay:0.05s}
+.fade-up-2{animation-delay:0.1s}
+.fade-up-3{animation-delay:0.15s}
+.fade-up-4{animation-delay:0.2s}
+.fade-up-5{animation-delay:0.25s}
+.slide-in{animation:slideIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;opacity:0}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-width);background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow:hidden}
+.main{margin-left:var(--sidebar-width);flex:1;padding:36px 40px;max-width:860px}
+
+/* ── SIDEBAR CSS ────────────────────────────────────── */
+.sidebar-logo{display:flex;align-items:center;justify-content:center;padding:22px 18px 18px;border-bottom:1px solid var(--border);text-decoration:none}
+.sidebar-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--muted2);text-decoration:none;font-size:13px;font-weight:500;transition:all 0.15s;cursor:pointer;border:none;background:transparent;width:100%;text-align:left}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(255,136,63,0.1);color:var(--accent);font-weight:600}
+.nav-item-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.sidebar-bottom{padding:10px 10px 14px;border-top:1px solid var(--border)}
+.plan-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;font-family:var(--mono);margin-top:4px}
+.plan-badge.free{background:rgba(107,107,120,.15);color:var(--muted2)}
+.plan-badge.starter{background:rgba(77,159,255,.12);color:var(--blue)}
+.plan-badge.agency{background:rgba(34,201,122,.12);color:var(--green)}
+.plan-badge.enterprise{background:rgba(255,107,53,.12);color:var(--accent)}
+
+/* ── BACK BTN ───────────────────────────────────────── */
+.back-btn{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border2);color:var(--muted2);padding:7px 14px;border-radius:8px;font-family:var(--font);font-size:13px;cursor:pointer;margin-bottom:24px;transition:all 0.15s;text-decoration:none}
+.back-btn:hover{color:var(--text);border-color:var(--accent)}
+
+/* ── HEADER ─────────────────────────────────────────── */
+.page-title{font-size:24px;font-weight:700;letter-spacing:-0.04em;margin-bottom:5px}
+.page-sub{font-size:13px;color:var(--muted2);margin-bottom:28px;line-height:1.6}
+
+/* ── CARD ───────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:16px}
+.card h2{font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text)}
+
+/* ── CONNECT PATHS ──────────────────────────────────── */
+.paths-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0}
+.path-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;transition:border-color 0.2s}
+.path-card:hover{border-color:var(--border2)}
+.path-card.primary{border-color:rgba(255,136,63,.25);background:rgba(255,136,63,.03)}
+.path-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:2px}
+.path-title{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:4px}
+.path-desc{font-size:12px;color:var(--muted2);line-height:1.6;flex:1}
+
+/* ── BUTTONS ────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;border-radius:9px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;border:none;text-decoration:none;white-space:nowrap;width:100%}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-ghost{background:var(--surface2);border:1px solid var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none!important}
+.btn-sm{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);padding:5px 12px;border-radius:7px;font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── FORM ───────────────────────────────────────────── */
+.field{margin-bottom:12px}
+.field label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px}
+.field input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border-color 0.15s}
+.field input:focus{border-color:var(--accent)}
+.field input::placeholder{color:var(--muted)}
+.field-hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+.msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;line-height:1.5}
+.msg.on{display:block}
+.msg.err{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.2);color:var(--red)}
+.msg.ok{background:rgba(34,201,122,.08);border:1px solid rgba(34,201,122,.2);color:var(--green)}
+.msg.info{background:rgba(77,159,255,.06);border:1px solid rgba(77,159,255,.15);color:var(--blue)}
+
+/* ── SITE LIST ──────────────────────────────────────── */
+.site-list{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.site-item{display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;cursor:pointer;transition:border-color 0.15s}
+.site-item:hover{border-color:var(--border2)}
+.site-item.selected{border-color:var(--accent);background:rgba(255,136,63,.04)}
+.site-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;cursor:pointer}
+.site-item-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.site-item-url{font-size:11px;color:var(--muted);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── CAPABILITIES ───────────────────────────────────── */
+.cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cap-item{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+.cap-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px}
+.cap-val{font-size:12px;font-weight:600}
+.cap-yes{color:var(--green)}
+.cap-no{color:var(--muted)}
+
+/* ── FAQ ────────────────────────────────────────────── */
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-item:last-child{border-bottom:none}
+.faq-q{font-size:13px;font-weight:600;padding:14px 0;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;user-select:none}
+.faq-q:hover{color:var(--accent)}
+.faq-arrow{font-size:10px;color:var(--muted);transition:transform 0.2s;flex-shrink:0}
+.faq-a{font-size:12.5px;color:var(--muted2);line-height:1.7;padding-bottom:14px;display:none}
+.faq-item.open .faq-a{display:block;animation:fadeUp 0.25s ease forwards}
+.faq-item.open .faq-arrow{transform:rotate(180deg)}
+
+/* ── ANALYTICS SNIPPET ──────────────────────────────── */
+.snippet-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.snippet-code{font-family:var(--mono);font-size:10.5px;color:var(--text2);display:block;word-break:break-all;line-height:1.6;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-top:8px}
+
+code{background:var(--surface2);border:1px solid var(--border2);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:11.5px;color:var(--accent)}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-container" class="sidebar"></div>
+  <main class="main">
+
+    <a href="forge-ai-dashboard.html#connections" class="back-btn fade-up fade-up-1">← Back to Connections</a>
+
+    <!-- Header -->
+    <div class="fade-up fade-up-2" style="display:flex;align-items:center;gap:16px;margin-bottom:6px">
+      <div style="width:52px;height:52px;background:#FAAD01;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <img src="https://cdn.simpleicons.org/wix/ffffff" width="28" height="28" alt="Wix">
+      </div>
+      <div>
+        <div class="page-title">Wix</div>
+        <div style="font-size:11px;color:var(--accent);font-weight:600;font-family:var(--mono)">API Integration · Enterprise & Studio only</div>
+      </div>
+    </div>
+    <div class="page-sub fade-up fade-up-2">Connect your Wix account to automatically discover and monitor all your client sites — or add any individual Wix site by URL.</div>
+
+    <!-- Status message -->
+    <div id="main-msg" class="msg fade-up fade-up-3"></div>
+
+    <!-- Enterprise Notice -->
+    <div class="fade-up fade-up-3" style="background:rgba(34,201,122,.06);border:1px solid rgba(34,201,122,.2);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start">
+      <span style="font-size:16px;flex-shrink:0">⭐</span>
+      <div style="font-size:12.5px;color:var(--green);line-height:1.6">
+        <strong>New: Install Forge AI directly on Wix.</strong> The Forge AI Wix app works on all Wix plans and enables full SEO mutation capabilities through Tesseract — no API key required. Simply click <strong>Install Forge AI on Wix</strong> below and approve the permissions.
+      </div>
+    </div>
+
+    <!-- ── CONNECT PATHS ── -->
+    <div class="card fade-up fade-up-3">
+      <h2>Connect your Wix account</h2>
+      <div class="paths-grid" id="step-connect">
+        <!-- Option A: Wix App (recommended) -->
+        <div class="path-card primary">
+          <div>
+            <div class="path-label">Recommended · Any Wix plan</div>
+            <div class="path-title">Install Forge AI App</div>
+            <div class="path-desc">Install the Forge AI app directly on your Wix site. Works on all plans. Enables full SEO mutation capabilities through Tesseract.</div>
+          </div>
+          <button class="btn btn-accent" id="install-app-btn" onclick="installWixApp()">
+            <img src="https://cdn.simpleicons.org/wix/ffffff" width="14" height="14" alt=""> Install Forge AI on Wix →
+          </button>
+        </div>
+        <!-- Option B: URL -->
+        <div class="path-card">
+          <div>
+            <div class="path-label">Any Wix account</div>
+            <div class="path-title">Add by URL</div>
+            <div class="path-desc">Monitor any individual Wix site by pasting its URL. Works on all Wix plans. Takes 30 seconds. No mutation capabilities.</div>
+          </div>
+          <button class="btn btn-ghost" onclick="showUrlForm()">Add by URL →</button>
+        </div>
+      </div>
+
+      <!-- API Key Form -->
+      <div id="api-form" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="field">
+          <label>Wix API Key</label>
+          <input type="text" id="wix-api-key" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" style="font-family:var(--mono)">
+          <div class="field-hint">Generated in Wix Dashboard → Settings → API Keys Manager.</div>
+        </div>
+        <div class="field">
+          <label>Wix Account ID</label>
+          <input type="text" id="wix-account-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" style="font-family:var(--mono)">
+          <div class="field-hint">Found next to your API key in the API Keys Manager.</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-accent" id="find-btn" onclick="findSites()" style="flex:1">Find My Sites →</button>
+          <button class="btn btn-ghost" onclick="hideApiForm()" style="width:auto;padding:10px 16px">Cancel</button>
+        </div>
+      </div>
+
+      <!-- URL Form -->
+      <div id="url-form" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="field">
+          <label>Wix Site URL</label>
+          <input type="url" id="site-url" placeholder="https://yourname.wixsite.com/mysite" autocomplete="off">
+          <div class="field-hint">Your custom domain or default Wix URL.</div>
+        </div>
+        <div class="field">
+          <label>Site Name <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+          <input type="text" id="site-name" placeholder="Client name" autocomplete="off">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-accent" id="url-add-btn" onclick="addByUrl()" style="flex:1">Add & Monitor →</button>
+          <button class="btn btn-ghost" onclick="hideUrlForm()" style="width:auto;padding:10px 16px">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Site selection (shown after API discovery) -->
+      <div id="step-sites" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600" id="sites-found-label"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm" onclick="selectAll()">Select All</button>
+            <button class="btn-sm" onclick="selectNone()">Clear</button>
+          </div>
+        </div>
+        <div class="site-list" id="site-list"></div>
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="btn btn-accent" id="add-btn" onclick="addSelected()" style="flex:1">Add Selected Sites →</button>
+          <button class="btn btn-ghost" onclick="resetForm()" style="width:auto;padding:10px 16px">← Start Over</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HOW TO GET API KEY ── -->
+    <div class="card fade-up fade-up-4" id="api-steps-card">
+      <h2>How to get your Wix API Key</h2>
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--border)">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,136,63,.1);border:1px solid rgba(255,136,63,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--accent);flex-shrink:0;font-family:var(--mono)">1</div>
+          <div>
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:5px">Open the Wix API Keys Manager</div>
+            <div style="font-size:12.5px;color:var(--muted2);line-height:1.7">In your Wix Enterprise or Studio dashboard, go to <strong style="color:var(--text2)">Settings → API Keys Manager</strong>. This is only available on Enterprise and Studio accounts.</div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:11.5px;color:var(--muted2);font-family:var(--mono);margin-top:8px">Wix Dashboard → Settings → API Keys Manager</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--border)">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,136,63,.1);border:1px solid rgba(255,136,63,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--accent);flex-shrink:0;font-family:var(--mono)">2</div>
+          <div>
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:5px">Generate a new API key</div>
+            <div style="font-size:12.5px;color:var(--muted2);line-height:1.7">Click <strong style="color:var(--text2)">+ Generate API Key</strong>. Give it a name like "Forge AI". Under permissions, enable <strong style="color:var(--text2)">Site List</strong> access and set it to <strong style="color:var(--text2)">All Sites</strong>.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--border)">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,136,63,.1);border:1px solid rgba(255,136,63,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--accent);flex-shrink:0;font-family:var(--mono)">3</div>
+          <div>
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:5px">Copy your API Key and Account ID</div>
+            <div style="font-size:12.5px;color:var(--muted2);line-height:1.7">After generating, copy the API key — it is only shown once. Your Account ID is shown on the same screen.</div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:11.5px;color:var(--muted2);font-family:var(--mono);margin-top:8px">API Key: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 0">
+          <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,136,63,.1);border:1px solid rgba(255,136,63,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--accent);flex-shrink:0;font-family:var(--mono)">4</div>
+          <div>
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:5px">Enter your credentials above</div>
+            <div style="font-size:12.5px;color:var(--muted2);line-height:1.7">Click <strong style="color:var(--text2)">Connect with API Key</strong> above, paste your API Key and Account ID, then click <strong style="color:var(--text2)">Find My Sites</strong>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CAPABILITIES ── -->
+    <div class="card fade-up fade-up-4">
+      <h2>What Forge AI monitors on Wix</h2>
+      <div class="cap-grid">
+        <div class="cap-item"><div class="cap-label">Health Scanning</div><div class="cap-val cap-yes">✓ Supported</div></div>
+        <div class="cap-item"><div class="cap-label">Performance</div><div class="cap-val cap-yes">✓ Supported</div></div>
+        <div class="cap-item"><div class="cap-label">SSL Monitoring</div><div class="cap-val cap-yes">✓ Supported</div></div>
+        <div class="cap-item"><div class="cap-label">Uptime Monitoring</div><div class="cap-val cap-yes">✓ Supported</div></div>
+        <div class="cap-item"><div class="cap-label">Daily Scans</div><div class="cap-val cap-yes">✓ Supported</div></div>
+        <div class="cap-item"><div class="cap-label">Score Alerts</div><div class="cap-val cap-yes">✓ Supported</div></div>
+        <div class="cap-item"><div class="cap-label">Auto Site Discovery</div><div class="cap-val cap-yes">✓ Supported</div></div>
+        <div class="cap-item"><div class="cap-label">Analytics Tracking</div><div class="cap-val cap-yes">✓ Supported</div></div>
+        <div class="cap-item"><div class="cap-label">Live Editor Alerts</div><div class="cap-val cap-no">— Not available</div></div>
+      </div>
+    </div>
+
+    <!-- ── ANALYTICS SNIPPETS ── -->
+    <div class="card fade-up fade-up-4">
+      <h2>Enable Analytics on your Wix sites</h2>
+      <p style="font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px">Add the Forge AI tracking snippet to each Wix site to enable visitor analytics. Paste it once in Wix Custom Code and analytics starts automatically.</p>
+      <div style="background:rgba(77,159,255,.05);border:1px solid rgba(77,159,255,.15);border-radius:10px;padding:14px 16px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">How to add in Wix</div>
+        <div style="font-size:12px;color:var(--muted2);line-height:1.8">
+          <div style="display:flex;gap:8px;padding:3px 0"><span style="color:var(--blue);font-weight:700;flex-shrink:0">1.</span><div><strong style="color:var(--text2)">Open your Wix Dashboard</strong> → go to <strong style="color:var(--text2)">Settings → Custom Code</strong></div></div>
+          <div style="display:flex;gap:8px;padding:3px 0"><span style="color:var(--blue);font-weight:700;flex-shrink:0">2.</span><div>Click <strong style="color:var(--text2)">+ Add Custom Code</strong> and paste the snippet. Set location to <strong style="color:var(--text2)">Body - end</strong></div></div>
+          <div style="display:flex;gap:8px;padding:3px 0"><span style="color:var(--blue);font-weight:700;flex-shrink:0">3.</span><div>Set it to apply to <strong style="color:var(--text2)">All Pages</strong> and click <strong style="color:var(--text2)">Apply</strong></div></div>
+        </div>
+      </div>
+      <div id="analytics-sites-loading" style="text-align:center;padding:16px;color:var(--muted);font-size:12px">Loading your Wix sites...</div>
+      <div id="analytics-sites-list" style="display:none"></div>
+      <div id="analytics-sites-empty" style="display:none;text-align:center;padding:16px;color:var(--muted);font-size:12px">No Wix sites found yet. Add your sites above first.</div>
+    </div>
+
+    <!-- ── FAQ ── -->
+    <div class="card fade-up fade-up-5">
+      <h2>Frequently asked questions</h2>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Do I need a Wix Enterprise account? <span class="faq-arrow">▼</span></div>
+        <div class="faq-a">Only for the API Key connection. Standard Wix accounts cannot generate API keys. However, you can still monitor any Wix site by adding it via URL — this works on all Wix plans.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">What's the difference between API Key and Add by URL? <span class="faq-arrow">▼</span></div>
+        <div class="faq-a">API Key connection automatically discovers all sites on your Wix account — ideal for agencies managing multiple Wix clients. Add by URL lets you monitor any single Wix site without API access.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Is my API key stored securely? <span class="faq-arrow">▼</span></div>
+        <div class="faq-a">Yes. Your API key is encrypted and stored securely in our database. It is only used to fetch your site list from the Wix API and is never exposed to the client.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">When will I get alerts? <span class="faq-arrow">▼</span></div>
+        <div class="faq-a">Forge AI scans your Wix sites every morning and alerts you only if a score drops 10 or more points since the last scan. Uptime is checked every 5 minutes around the clock.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Can I add more Wix sites later? <span class="faq-arrow">▼</span></div>
+        <div class="faq-a">Yes. Come back to this page anytime to add additional sites via API Key or URL. You can also add Wix sites directly from the dashboard.</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+(function() {
+  var SUPABASE_URL = 'https://mybvzjcjfjytcfgitmpv.supabase.co';
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YnZ6amNqZmp5dGNmZ2l0bXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE5MjgsImV4cCI6MjA5NDE4NzkyOH0.OHKGmKlyk86kdSXjFh5jVHqvMC-nPKhPkAtSraPVwEs';
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  var SITES = [];
+  var agencyToken = null;
+
+  function showMsg(type, text) {
+    var el = document.getElementById('main-msg');
+    if (!el) return;
+    el.className = 'msg on ' + type;
+    el.textContent = text;
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function hideMsg() { var el = document.getElementById('main-msg'); if (el) el.className = 'msg'; }
+
+  // ── FAQ ───────────────────────────────────────────────
+  function toggleFaq(el) {
+    var item = el.parentElement;
+    var wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(function(i) { i.classList.remove('open'); });
+    if (!wasOpen) item.classList.add('open');
+  }
+
+  // ── FORM TOGGLES ──────────────────────────────────────
+  // ── INSTALL WIX APP ──────────────────────────────────────
+  // Redirects to Wix installer with the agency's Forge AI userId
+  // as the state param so wix-install.js can link the installation
+  async function installWixApp() {
+    var btn = document.getElementById('install-app-btn');
+    if (btn) { btn.textContent = 'Redirecting to Wix...'; btn.disabled = true; }
+    showMsg('info', 'Redirecting you to Wix to install the Forge AI app. After installing, return to this page to complete the connection.');
+    var userId = window.USER ? window.USER.id : null;
+    if (!userId) {
+      showMsg('err', 'Session error. Please refresh the page and try again.');
+      if (btn) { btn.innerHTML = '<img src="https://cdn.simpleicons.org/wix/ffffff" width="14" height="14" alt=""> Install Forge AI on Wix →'; btn.disabled = false; }
+      return;
+    }
+    // Set localStorage flag as fast path for same-tab detection
+    localStorage.setItem('wix_install_pending', Date.now().toString());
+    localStorage.setItem('wix_install_user', window.USER ? window.USER.id : '');
+    // Open Wix install link in new tab — agency stays on this page
+    // When app is published, swap this URL to the full Wix installer URL
+    // That is the ONLY change needed to go from Option B to published app
+    window.open('https://wix.to/WT6c3MZ', '_blank');
+    // Show the "I've installed it" button immediately after opening
+    setTimeout(function() { showPostInstallState(); }, 1500);
+  }
+
+  // ── POST-INSTALL STATE ────────────────────────────────────
+  // Shows after the agency opens the Wix install link
+  // Also shown automatically on page load if a pending install exists
+  function showPostInstallState() {
+    var connectSection = document.getElementById('step-connect');
+    if (!connectSection) return;
+    connectSection.innerHTML =
+      '<div style="text-align:center;padding:20px 0">' +
+        '<div style="font-size:32px;margin-bottom:12px">📱</div>' +
+        '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px">Install the app on your Wix site</div>' +
+        '<div style="font-size:12.5px;color:var(--muted2);margin-bottom:20px;line-height:1.7">A new tab opened with the Wix App Market.<br>Install Forge AI on your site, then come back here and click below.</div>' +
+        '<div style="display:flex;flex-direction:column;gap:10px;max-width:340px;margin:0 auto">' +
+          '<button class="btn btn-accent" id="link-btn" onclick="linkWixAccount()">' +
+            'I have installed it — connect my account' +
+          '</button>' +
+          '<button class="btn btn-ghost" onclick="resetInstallState()" style="font-size:12px">' +
+            'Start over' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function resetInstallState() {
+    localStorage.removeItem('wix_install_pending');
+    localStorage.removeItem('wix_install_user');
+    window.location.reload();
+  }
+
+  // ── LINK WIX ACCOUNT ──────────────────────────────────────
+  // Called when agency clicks "I've installed it"
+  async function linkWixAccount() {
+    var btn = document.getElementById('link-btn');
+    if (btn) { btn.textContent = 'Linking your account...'; btn.disabled = true; }
+    showMsg('info', 'Connecting your Wix site to Forge AI...');
+
+    var sessRes = await sb.auth.getSession();
+    var session = sessRes.data && sessRes.data.session;
+    if (!session) {
+      showMsg('err', 'Session expired. Please refresh the page.');
+      return;
+    }
+
+    try {
+      var res = await fetch('https://forgeai-wgs.com/api/wix-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token
+        }
+      });
+      var data = await res.json();
+
+      if (data.success) {
+        localStorage.removeItem('wix_install_pending');
+        localStorage.removeItem('wix_install_user');
+        showMsg('ok', 'Connected! ' + data.siteUrl + ' is now linked to your Forge AI account. Redirecting to dashboard...');
+        setTimeout(function() { window.location.href = 'forge-ai-dashboard.html?newsite=1'; }, 2500);
+      } else if (data.needsSiteUrl) {
+        // Wix couldn't auto-detect the URL — ask the agency to enter it
+        showMsg('info', 'Please enter your Wix site URL to complete the connection.');
+        var connectSection = document.getElementById('step-connect');
+        if (connectSection) {
+          connectSection.innerHTML +=
+            '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)" id="url-input-section">' +
+              '<div class="field"><label>Your Wix Site URL</label>' +
+                '<input type="url" id="wix-site-url-input" placeholder="https://www.yoursite.com" style="font-family:var(--mono);font-size:13px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);width:100%;outline:none">' +
+              '</div>' +
+              '<button class="btn btn-accent" onclick="linkWixAccountWithUrl()" style="width:100%">Connect this site →</button>' +
+            '</div>';
+        }
+        if (btn) { btn.textContent = 'I have installed it — connect my account'; btn.disabled = false; }
+      } else {
+        showMsg('err', data.error || 'Could not link your Wix site. Please try again.');
+        if (btn) { btn.textContent = 'I have installed it — connect my account'; btn.disabled = false; }
+      }
+    } catch(e) {
+      console.error('wix-link error:', e.message);
+      showMsg('err', 'Something went wrong. Please try again.');
+      if (btn) { btn.textContent = 'I have installed it — connect my account'; btn.disabled = false; }
+    }
+  }
+
+  // ── CHECK FOR PENDING INSTALL ON PAGE LOAD ────────────────
+  // Only shows post-install state if the agency just came from clicking install
+  // Uses localStorage as the signal — set when install button is clicked
+  async function checkPendingWixInstall(sessionToken) {
+    try {
+      // Only show post-install state if localStorage flag is set
+      // This means the agency clicked "Install Forge AI on Wix" in this browser
+      var pending = localStorage.getItem('wix_install_pending');
+      if (!pending) return; // Normal page load — show default connect section
+
+      var elapsed = Date.now() - parseInt(pending);
+      if (elapsed > 24 * 60 * 60 * 1000) {
+        // Expired — clear and show normal page
+        localStorage.removeItem('wix_install_pending');
+        localStorage.removeItem('wix_install_user');
+        return;
+      }
+
+      // Flag is set — agency clicked install button — show post-install state
+      console.log('Pending Wix install detected — showing post-install state');
+      showPostInstallState();
+    } catch(e) {
+      console.log('checkPendingWixInstall error (non-fatal):', e.message);
+    }
+  }
+
+  function showApiForm() {
+    hideUrlForm();
+    var f = document.getElementById('api-form');
+    f.style.display = 'block';
+    f.style.animation = 'fadeUp 0.3s ease forwards';
+    setTimeout(function() { document.getElementById('wix-api-key').focus(); }, 100);
+  }
+  function hideApiForm() {
+    document.getElementById('api-form').style.display = 'none';
+    document.getElementById('wix-api-key').value = '';
+    document.getElementById('wix-account-id').value = '';
+    hideMsg();
+  }
+  function showUrlForm() {
+    hideApiForm();
+    var f = document.getElementById('url-form');
+    f.style.display = 'block';
+    f.style.animation = 'fadeUp 0.3s ease forwards';
+    setTimeout(function() { document.getElementById('site-url').focus(); }, 100);
+  }
+  function hideUrlForm() {
+    document.getElementById('url-form').style.display = 'none';
+    var u = document.getElementById('site-url');
+    var n = document.getElementById('site-name');
+    if (u) u.value = '';
+    if (n) n.value = '';
+    hideMsg();
+  }
+
+  // ── FIND SITES VIA API KEY ────────────────────────────
+  async function findSites() {
+    var apiKey = document.getElementById('wix-api-key').value.trim();
+    var accountId = document.getElementById('wix-account-id').value.trim();
+    if (!apiKey || !accountId) { showMsg('err', 'Please enter both your API Key and Account ID.'); return; }
+    var btn = document.getElementById('find-btn');
+    btn.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite"></span> Finding sites...';
+    btn.disabled = true;
+    showMsg('info', 'Connecting to your Wix account...');
+    try {
+      var res = await fetch('https://forgeai-wgs.com/api/wix-connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list', apiKey: apiKey, accountId: accountId, token: agencyToken })
+      });
+      var data = await res.json();
+      if ((data.success || data.sites) && data.sites && data.sites.length > 0) {
+        SITES = data.sites;
+        renderSites(SITES);
+        document.getElementById('step-sites').style.display = 'block';
+        document.getElementById('step-sites').style.animation = 'fadeUp 0.35s ease forwards';
+        document.getElementById('sites-found-label').textContent = SITES.length + ' site' + (SITES.length !== 1 ? 's' : '') + ' found — enter URLs for sites marked ENTER URL';
+        document.getElementById('api-form').style.display = 'none';
+        showMsg('ok', 'Connected! ' + SITES.length + ' sites found. Enter URLs for any sites missing them, then click Add Selected Sites.');
+      } else if (data.sites && data.sites.length === 0) {
+        showMsg('err', 'No sites found on this Wix account. Make sure your API key has Site List access.');
+        btn.innerHTML = 'Find My Sites →'; btn.disabled = false;
+      } else {
+        showMsg('err', data.error || 'Could not connect to Wix. Please check your credentials.');
+        btn.innerHTML = 'Find My Sites →'; btn.disabled = false;
+      }
+    } catch(e) {
+      showMsg('err', 'Error: ' + e.message);
+      btn.innerHTML = 'Find My Sites →'; btn.disabled = false;
+    }
+  }
+
+  // ── SITE LIST ─────────────────────────────────────────
+  function renderSites(sites) {
+    var list = document.getElementById('site-list');
+    list.innerHTML = sites.map(function(site, i) {
+      var urlField = site.url
+        ? '<div class="site-item-url">' + site.url + '</div>'
+        : '<input type="text" id="site-url-' + i + '" placeholder="https://yourdomain.com" style="font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--border2);border-radius:5px;padding:4px 8px;color:var(--text);width:100%;margin-top:4px" onclick="event.stopPropagation()">';
+      return '<div class="site-item selected slide-in" id="site-item-' + i + '" style="animation-delay:' + (i * 0.05) + 's" onclick="toggleSite(' + i + ')">' +
+        '<input type="checkbox" id="site-cb-' + i + '" checked onclick="event.stopPropagation();toggleSite(' + i + ')">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="site-item-name">' + (site.name || 'Untitled') + (site.needsUrl ? ' <span style="font-size:9px;color:var(--yellow);font-weight:600;margin-left:4px">ENTER URL</span>' : '') + '</div>' +
+          urlField +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function toggleSite(i) {
+    var item = document.getElementById('site-item-' + i);
+    var cb = document.getElementById('site-cb-' + i);
+    if (!item || !cb) return;
+    cb.checked = !cb.checked;
+    item.className = 'site-item' + (cb.checked ? ' selected' : '');
+  }
+  function selectAll() { SITES.forEach(function(_, i) { var item = document.getElementById('site-item-' + i); var cb = document.getElementById('site-cb-' + i); if (item && cb) { cb.checked = true; item.className = 'site-item selected'; } }); }
+  function selectNone() { SITES.forEach(function(_, i) { var item = document.getElementById('site-item-' + i); var cb = document.getElementById('site-cb-' + i); if (item && cb) { cb.checked = false; item.className = 'site-item'; } }); }
+
+  function resetForm() {
+    document.getElementById('step-sites').style.display = 'none';
+    document.getElementById('api-form').style.display = 'none';
+    document.getElementById('url-form').style.display = 'none';
+    hideMsg(); SITES = [];
+  }
+
+  // ── ADD SELECTED ──────────────────────────────────────
+  async function addSelected() {
+    // Collect selected sites — read URL from input field if site has no URL
+    var selected = SITES.map(function(site, i) {
+      var cb = document.getElementById('site-cb-' + i);
+      if (!cb || !cb.checked) return null;
+      if (!site.url) {
+        var urlInput = document.getElementById('site-url-' + i);
+        var typedUrl = urlInput && urlInput.value.trim();
+        if (!typedUrl) return null;
+        if (!typedUrl.startsWith('http')) typedUrl = 'https://' + typedUrl;
+        site = Object.assign({}, site, { url: typedUrl });
+      }
+      return site;
+    }).filter(Boolean);
+    if (selected.length === 0) { showMsg('err', 'Please select at least one site.'); return; }
+    var btn = document.getElementById('add-btn');
+    btn.textContent = 'Adding ' + selected.length + ' site' + (selected.length !== 1 ? 's' : '') + '...';
+    btn.disabled = true;
+    showMsg('info', 'Adding your Wix sites...');
+    try {
+      // Use wix-connect action:add so credentials are saved to platform_credentials
+      var apiKey = document.getElementById('wix-api-key') ? document.getElementById('wix-api-key').value.trim() : '';
+      var accountId = document.getElementById('wix-account-id') ? document.getElementById('wix-account-id').value.trim() : '';
+      var siteIds = selected.map(function(s) { return { id: s.id, siteId: s.siteId, url: s.url, name: s.name }; });
+
+      var res = await fetch('https://forgeai-wgs.com/api/wix-connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add',
+          apiKey: apiKey,
+          accountId: accountId,
+          token: agencyToken,
+          siteIds: siteIds
+        })
+      });
+      var data = await res.json();
+      if (data.success) {
+        var added = data.added || selected.length;
+        showMsg('ok', added + ' site' + (added !== 1 ? 's' : '') + ' added! Redirecting to your dashboard...');
+        setTimeout(function() { window.location.href = 'forge-ai-dashboard.html?newsite=1'; }, 2000);
+      } else {
+        showMsg('err', data.error || 'Failed to add sites.');
+        btn.textContent = 'Add Selected Sites →'; btn.disabled = false;
+      }
+    } catch(e) {
+      showMsg('err', 'Error: ' + e.message);
+      btn.textContent = 'Add Selected Sites →'; btn.disabled = false;
+    }
+  }
+
+  // ── ADD BY URL ────────────────────────────────────────
+  async function addByUrl() {
+    var url = (document.getElementById('site-url').value || '').trim();
+    var name = (document.getElementById('site-name').value || '').trim();
+    var btn = document.getElementById('url-add-btn');
+    if (!url) { showMsg('err', 'Please enter the site URL.'); return; }
+    if (!url.startsWith('http')) url = 'https://' + url;
+    if (!agencyToken) { showMsg('err', 'Session error. Please refresh.'); return; }
+    btn.textContent = 'Adding...'; btn.disabled = true;
+    showMsg('info', 'Adding site and running first scan...');
+    try {
+      var res = await fetch('https://forgeai-wgs.com/api/register-site', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url, name: name || url, platform: 'wix', token: agencyToken, requestingUserId: window.USER ? window.USER.id : null })
+      });
+      var data = await res.json();
+      if (data.success || data.message) {
+        showMsg('ok', '✓ Site added! Redirecting to your dashboard...');
+        setTimeout(function() { window.location.href = 'forge-ai-dashboard.html?newsite=1'; }, 1800);
+      } else {
+        showMsg('err', data.error || 'Failed to add site.');
+        btn.textContent = 'Add & Monitor →'; btn.disabled = false;
+      }
+    } catch(e) {
+      showMsg('err', 'Error: ' + e.message);
+      btn.textContent = 'Add & Monitor →'; btn.disabled = false;
+    }
+  }
+
+  // ── ANALYTICS SNIPPETS ────────────────────────────────
+  async function loadAnalyticsSites(userId) {
+    var loading = document.getElementById('analytics-sites-loading');
+    var list = document.getElementById('analytics-sites-list');
+    var empty = document.getElementById('analytics-sites-empty');
+    try {
+      var result = await sb.from('user_sites').select('site_id,url,name,platform').eq('user_id', userId).order('name');
+      if (result.data) result.data = result.data.filter(function(s) { return !s.platform || s.platform === 'wix' || s.platform === 'other' || s.platform === 'dashboard'; });
+      var sites = result.data;
+      if (loading) loading.style.display = 'none';
+      if (!sites || sites.length === 0) { if (empty) empty.style.display = 'block'; return; }
+      if (list) {
+        list.style.display = 'block';
+        list.innerHTML = sites.map(function(site, i) {
+          var snippet = '<script src="https://forgeai-wgs.com/forge-ai-tracker.js?site=' + site.site_id + '" data-site-id="' + site.site_id + '"><\/script>';
+          return '<div class="snippet-card">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
+              '<div><div style="font-size:12px;font-weight:600;color:var(--text)">' + (site.name||site.url) + '</div>' +
+              '<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">' + site.url + '</div></div>' +
+              '<button class="btn-sm" onclick="copySiteSnippet(' + i + ')">Copy</button>' +
+            '</div>' +
+            '<code class="snippet-code" id="snippet-' + i + '">' + snippet.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code>' +
+          '</div>';
+        }).join('');
+      }
+    } catch(e) {
+      if (loading) loading.style.display = 'none';
+      if (empty) { empty.style.display = 'block'; empty.textContent = 'Could not load sites.'; }
+    }
+  }
+
+  function copySiteSnippet(i) {
+    var el = document.getElementById('snippet-' + i);
+    if (!el) return;
+    var btns = document.querySelectorAll('.btn-sm');
+    navigator.clipboard.writeText(el.textContent.replace(/&lt;/g,'<').replace(/&gt;/g,'>')).then(function() {
+      var btn = document.querySelector('[onclick="copySiteSnippet(' + i + ')"]');
+      if (btn) { btn.textContent = 'Copied!'; setTimeout(function() { btn.textContent = 'Copy'; }, 2000); }
+    });
+  }
+
+  // ── INIT ─────────────────────────────────────────────
+  (async function() {
+    var wait = function(cb) { typeof supabase !== 'undefined' ? cb() : setTimeout(function(){wait(cb)},100); };
+    wait(async function() {
+      var sessRes = await sb.auth.getSession();
+      var session = sessRes.data && sessRes.data.session;
+      if (!session) { window.location.href = 'forge-ai-login.html'; return; }
+      window.USER = session.user;
+      if (window.sbApplyRole) sbApplyRole(session.user.id, session.user.email);
+      // Set agency name
+      if (session.user.user_metadata && session.user.user_metadata.agency_name) {
+        var el = document.getElementById('sb-agency-name');
+        if (el) el.textContent = session.user.user_metadata.agency_name;
+      }
+      var tokenUserId = session.user.id;
+      var memberResult = await sb.from('team_members').select('agency_id').eq('user_id', session.user.id).eq('status', 'active').maybeSingle();
+      if (memberResult.data && memberResult.data.agency_id) tokenUserId = memberResult.data.agency_id;
+      var tdResult = await sb.from('agency_tokens').select('token').eq('user_id', tokenUserId).maybeSingle();
+      agencyToken = tdResult.data && tdResult.data.token;
+      loadAnalyticsSites(tokenUserId);
+      // Auto-link pending Wix install if returning from Wix
+      checkPendingWixInstall(session.access_token);
+    });
+  })();
+
+  async function linkWixAccountWithUrl() {
+    var urlInput = document.getElementById('wix-site-url-input');
+    if (!urlInput || !urlInput.value.trim()) {
+      showMsg('err', 'Please enter your Wix site URL.');
+      return;
+    }
+    var siteUrl = urlInput.value.trim();
+    if (!siteUrl.startsWith('http')) siteUrl = 'https://' + siteUrl;
+
+    var sessRes = await sb.auth.getSession();
+    var session = sessRes.data && sessRes.data.session;
+    if (!session) { showMsg('err', 'Session expired. Please refresh.'); return; }
+
+    showMsg('info', 'Connecting ' + siteUrl + '...');
+    try {
+      var res = await fetch('https://forgeai-wgs.com/api/wix-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ siteUrl: siteUrl })
+      });
+      var data = await res.json();
+      if (data.success) {
+        localStorage.removeItem('wix_install_pending');
+        localStorage.removeItem('wix_install_user');
+        showMsg('ok', 'Connected! Redirecting to dashboard...');
+        setTimeout(function() { window.location.href = 'forge-ai-dashboard.html?newsite=1'; }, 2000);
+      } else {
+        showMsg('err', data.error || 'Could not connect. Please try again.');
+      }
+    } catch(e) {
+      showMsg('err', 'Something went wrong. Please try again.');
+    }
+  }
+
+  window.installWixApp = installWixApp;
+  window.checkPendingWixInstall = checkPendingWixInstall;
+  window.linkWixAccount = linkWixAccount;
+  window.linkWixAccountWithUrl = linkWixAccountWithUrl;
+  window.resetInstallState = resetInstallState;
+  window.showPostInstallState = showPostInstallState;
+  window.showApiForm = showApiForm;
+  window.hideApiForm = hideApiForm;
+  window.showUrlForm = showUrlForm;
+  window.hideUrlForm = hideUrlForm;
+  window.findSites = findSites;
+  window.addSelected = addSelected;
+  window.addByUrl = addByUrl;
+  window.toggleSite = toggleSite;
+  window.selectAll = selectAll;
+  window.selectNone = selectNone;
+  window.resetForm = resetForm;
+  window.toggleFaq = toggleFaq;
+  window.copySiteSnippet = copySiteSnippet;
+})();
+</script>
+</body>
+</html>
