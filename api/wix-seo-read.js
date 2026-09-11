@@ -26,23 +26,23 @@ module.exports = async (req, res) => {
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
   try {
-    // Find the site by URL
+    // Find all Wix sites matching this URL across all users
     const cleanUrl = siteUrl.replace(/\/$/, '').toLowerCase();
-    const { data: site } = await sb.from('user_sites')
-      .select('site_id, user_id')
+    const { data: sites } = await sb.from('user_sites')
+      .select('site_id')
       .ilike('url', cleanUrl + '%')
-      .eq('platform', 'wix')
-      .limit(1)
-      .maybeSingle();
+      .eq('platform', 'wix');
 
-    if (!site) {
+    if (!sites || sites.length === 0) {
       return res.status(200).json({ metaDescription: null, title: null });
     }
 
-    // Get the most recently deployed approved fix for this site
+    const siteIds = sites.map(s => s.site_id);
+
+    // Get the most recently deployed fix across all matching sites
     const { data: fixes } = await sb.from('agent_fixes')
       .select('result, tool, deployed_at')
-      .eq('site_id', site.site_id)
+      .in('site_id', siteIds)
       .eq('status', 'deployed')
       .eq('platform', 'wix')
       .order('deployed_at', { ascending: false })
